@@ -1,0 +1,119 @@
+00:58:13 | INFO    | train.effnetb3_weighted | ====================================================================
+00:58:13 | INFO    | train.effnetb3_weighted |   RUN: effnetb3_weighted
+00:58:13 | INFO    | train.effnetb3_weighted | ====================================================================
+00:58:13 | INFO    | train.effnetb3_weighted | Device: NVIDIA GeForce RTX 3050 6GB Laptop GPU (6.4 GB VRAM)
+00:58:13 | INFO    | train.effnetb3_weighted | Mixed precision (AMP): True
+00:58:13 | INFO    | train.effnetb3_weighted | Train: 2562 images (2562 from cache) | Val: 550 images (550 from cache)
+00:58:13 | INFO    | train.effnetb3_weighted | Train class counts: [1263, 258, 699, 135, 207]
+00:58:13 | INFO    | train.effnetb3_weighted | Split fingerprint: 415bcc1c575a
+00:58:15 | INFO    | train.effnetb3_weighted | Model:
+  backbone   : efficientnet_b3
+  parameters : 10,703,917 total | 10,703,917 trainable
+  note       : Compound depth/width/resolution scaling (~12M params)
+00:58:15 | INFO    | train.effnetb3_weighted | Forward check passed: output shape (2, 5)
+00:58:15 | INFO    | train.effnetb3_weighted | Weighted cross-entropy, weights from the TRAIN split:
+00:58:15 | INFO    | train.effnetb3_weighted |     No DR              0.2159
+00:58:15 | INFO    | train.effnetb3_weighted |     Mild               1.0569
+00:58:15 | INFO    | train.effnetb3_weighted |     Moderate           0.3901
+00:58:15 | INFO    | train.effnetb3_weighted |     Severe             2.0198
+00:58:15 | INFO    | train.effnetb3_weighted |     Proliferative DR   1.3173
+00:58:15 | INFO    | train.effnetb3_weighted | Epochs 20 | batch 8 x accum 2 = effective 16 | 160 optimiser steps/epoch
+00:58:15 | INFO    | train.effnetb3_weighted | --------------------------------------------------------------------
+00:58:15 | INFO    | train.effnetb3_weighted | Epoch 1/20
+00:58:36 | INFO    | train.effnetb3_weighted |     batch   50/320   loss 3.1252  lr 4.69e-05
+00:58:41 | INFO    | train.effnetb3_weighted |     batch  100/320   loss 2.4647  lr 9.38e-05
+00:58:50 | INFO    | train.effnetb3_weighted |     batch  150/320   loss 2.1194  lr 1.41e-04
+00:59:46 | INFO    | train.effnetb3_weighted |     batch  200/320   loss 1.9730  lr 1.88e-04
+00:59:51 | INFO    | train.effnetb3_weighted |     batch  250/320   loss 1.8549  lr 2.34e-04
+00:59:57 | INFO    | train.effnetb3_weighted |     batch  300/320   loss 1.7878  lr 2.81e-04
+01:00:06 | INFO    | train.effnetb3_weighted | train_loss 1.7599 | val_loss 1.2494 | val_QWK 0.8105 | val_acc 0.7055 | 111s (ETA 35 min)
+01:00:06 | INFO    | train.effnetb3_weighted |   new best val_qwk = 0.8105 (+0.8105) - saving best.pt
+01:00:06 | INFO    | train.effnetb3_weighted | --------------------------------------------------------------------
+01:00:06 | INFO    | train.effnetb3_weighted | Epoch 2/20
+01:00:11 | INFO    | train.effnetb3_weighted |     batch   50/320   loss 1.2320  lr 3.00e-04
+01:00:16 | INFO    | train.effnetb3_weighted |     batch  100/320   loss 1.1173  lr 3.00e-04
+01:00:21 | INFO    | train.effnetb3_weighted |     batch  150/320   loss 1.1067  lr 3.00e-04
+01:00:26 | INFO    | train.effnetb3_weighted |     batch  200/320   loss 1.1016  lr 2.99e-04
+01:00:31 | INFO    | train.effnetb3_weighted |     batch  250/320   loss 1.1153  lr 2.99e-04
+01:00:37 | INFO    | train.effnetb3_weighted |     batch  300/320   loss 1.1026  lr 2.98e-04
+01:00:41 | INFO    | train.effnetb3_weighted | train_loss 1.1065 | val_loss 0.9626 | val_QWK 0.8655 | val_acc 0.7673 | 35s (ETA 22 min)
+01:00:41 | INFO    | train.effnetb3_weighted |   new best val_qwk = 0.8655 (+0.0550) - saving best.pt
+01:00:41 | INFO    | train.effnetb3_weighted | --------------------------------------------------------------------
+01:00:41 | INFO    | train.effnetb3_weighted | Epoch 3/20
+01:00:46 | INFO    | train.effnetb3_weighted |     batch   50/320   loss 0.7497  lr 2.97e-04
+01:00:51 | INFO    | train.effnetb3_weighted |     batch  100/320   loss 0.7975  lr 2.97e-04
+01:00:56 | INFO    | train.effnetb3_weighted |     batch  150/320   loss 0.8109  lr 2.96e-04
+01:01:01 | INFO    | train.effnetb3_weighted |     batch  200/320   loss 0.8412  lr 2.95e-04
+01:01:06 | INFO    | train.effnetb3_weighted |     batch  250/320   loss 0.8407  lr 2.94e-04
+01:01:12 | INFO    | train.effnetb3_weighted |     batch  300/320   loss 0.8732  lr 2.92e-04
+01:01:17 | INFO    | train.effnetb3_weighted | train_loss 0.8773 | val_loss 0.9113 | val_QWK 0.8938 | val_acc 0.7982 | 36s (ETA 17 min)
+01:01:17 | INFO    | train.effnetb3_weighted |   new best val_qwk = 0.8938 (+0.0283) - saving best.pt
+01:01:17 | INFO    | train.effnetb3_weighted | --------------------------------------------------------------------
+01:01:17 | INFO    | train.effnetb3_weighted | Epoch 4/20
+01:01:24 | INFO    | train.effnetb3_weighted |     batch   50/320   loss 0.7491  lr 2.91e-04
+01:01:31 | INFO    | train.effnetb3_weighted |     batch  100/320   loss 0.7153  lr 2.89e-04
+01:01:38 | INFO    | train.effnetb3_weighted |     batch  150/320   loss 0.7474  lr 2.88e-04
+01:01:44 | INFO    | train.effnetb3_weighted |     batch  200/320   loss 0.7434  lr 2.86e-04
+01:01:51 | INFO    | train.effnetb3_weighted |     batch  250/320   loss 0.7288  lr 2.85e-04
+01:01:57 | INFO    | train.effnetb3_weighted |     batch  300/320   loss 0.7250  lr 2.83e-04
+01:02:02 | INFO    | train.effnetb3_weighted | train_loss 0.7275 | val_loss 1.2993 | val_QWK 0.8771 | val_acc 0.7818 | 44s (ETA 15 min)
+01:02:02 | INFO    | train.effnetb3_weighted |   no improvement (1/5) - best val_qwk 0.8938 at epoch 3
+01:02:02 | INFO    | train.effnetb3_weighted | --------------------------------------------------------------------
+01:02:02 | INFO    | train.effnetb3_weighted | Epoch 5/20
+01:02:08 | INFO    | train.effnetb3_weighted |     batch   50/320   loss 0.6065  lr 2.80e-04
+01:02:14 | INFO    | train.effnetb3_weighted |     batch  100/320   loss 0.5919  lr 2.78e-04
+01:02:20 | INFO    | train.effnetb3_weighted |     batch  150/320   loss 0.5674  lr 2.76e-04
+01:02:26 | INFO    | train.effnetb3_weighted |     batch  200/320   loss 0.5622  lr 2.74e-04
+01:02:33 | INFO    | train.effnetb3_weighted |     batch  250/320   loss 0.5905  lr 2.72e-04
+01:02:40 | INFO    | train.effnetb3_weighted |     batch  300/320   loss 0.5988  lr 2.70e-04
+01:02:45 | INFO    | train.effnetb3_weighted | train_loss 0.6093 | val_loss 0.9734 | val_QWK 0.8781 | val_acc 0.7800 | 43s (ETA 13 min)
+01:02:45 | INFO    | train.effnetb3_weighted |   no improvement (2/5) - best val_qwk 0.8938 at epoch 3
+01:02:45 | INFO    | train.effnetb3_weighted | --------------------------------------------------------------------
+01:02:45 | INFO    | train.effnetb3_weighted | Epoch 6/20
+01:02:51 | INFO    | train.effnetb3_weighted |     batch   50/320   loss 0.4163  lr 2.66e-04
+01:02:57 | INFO    | train.effnetb3_weighted |     batch  100/320   loss 0.4557  lr 2.64e-04
+01:03:03 | INFO    | train.effnetb3_weighted |     batch  150/320   loss 0.4730  lr 2.61e-04
+01:03:09 | INFO    | train.effnetb3_weighted |     batch  200/320   loss 0.4647  lr 2.59e-04
+01:03:15 | INFO    | train.effnetb3_weighted |     batch  250/320   loss 0.4681  lr 2.56e-04
+01:03:21 | INFO    | train.effnetb3_weighted |     batch  300/320   loss 0.4918  lr 2.53e-04
+01:03:26 | INFO    | train.effnetb3_weighted | train_loss 0.4897 | val_loss 1.1167 | val_QWK 0.8884 | val_acc 0.7764 | 41s (ETA 12 min)
+01:03:26 | INFO    | train.effnetb3_weighted |   no improvement (3/5) - best val_qwk 0.8938 at epoch 3
+01:03:26 | INFO    | train.effnetb3_weighted | --------------------------------------------------------------------
+01:03:26 | INFO    | train.effnetb3_weighted | Epoch 7/20
+01:03:32 | INFO    | train.effnetb3_weighted |     batch   50/320   loss 0.3079  lr 2.49e-04
+01:03:37 | INFO    | train.effnetb3_weighted |     batch  100/320   loss 0.4950  lr 2.46e-04
+01:03:44 | INFO    | train.effnetb3_weighted |     batch  150/320   loss 0.4421  lr 2.43e-04
+01:03:49 | INFO    | train.effnetb3_weighted |     batch  200/320   loss 0.4293  lr 2.40e-04
+01:03:55 | INFO    | train.effnetb3_weighted |     batch  250/320   loss 0.4436  lr 2.37e-04
+01:04:01 | INFO    | train.effnetb3_weighted |     batch  300/320   loss 0.4552  lr 2.34e-04
+01:04:06 | INFO    | train.effnetb3_weighted | train_loss 0.4549 | val_loss 1.3388 | val_QWK 0.8557 | val_acc 0.8055 | 40s (ETA 11 min)
+01:04:06 | INFO    | train.effnetb3_weighted |   no improvement (4/5) - best val_qwk 0.8938 at epoch 3
+01:04:06 | INFO    | train.effnetb3_weighted | --------------------------------------------------------------------
+01:04:06 | INFO    | train.effnetb3_weighted | Epoch 8/20
+01:04:13 | INFO    | train.effnetb3_weighted |     batch   50/320   loss 0.3829  lr 2.30e-04
+01:04:19 | INFO    | train.effnetb3_weighted |     batch  100/320   loss 0.3555  lr 2.26e-04
+01:04:25 | INFO    | train.effnetb3_weighted |     batch  150/320   loss 0.3663  lr 2.23e-04
+01:04:32 | INFO    | train.effnetb3_weighted |     batch  200/320   loss 0.3624  lr 2.20e-04
+01:04:38 | INFO    | train.effnetb3_weighted |     batch  250/320   loss 0.3686  lr 2.16e-04
+01:04:43 | INFO    | train.effnetb3_weighted |     batch  300/320   loss 0.3601  lr 2.13e-04
+01:04:48 | INFO    | train.effnetb3_weighted | train_loss 0.3643 | val_loss 1.7696 | val_QWK 0.8659 | val_acc 0.7509 | 42s (ETA 10 min)
+01:04:48 | INFO    | train.effnetb3_weighted |   no improvement (5/5) - best val_qwk 0.8938 at epoch 3
+01:04:48 | INFO    | train.effnetb3_weighted | Early stopping triggered.
+01:04:48 | INFO    | train.effnetb3_weighted | ====================================================================
+01:04:48 | INFO    | train.effnetb3_weighted | Finished effnetb3_weighted in 6.5 min (8 epochs, mean 49s/epoch)
+01:04:48 | INFO    | train.effnetb3_weighted | Best val_qwk = 0.8938 at epoch 3
+01:04:48 | INFO    | train.effnetb3_weighted | Validation metrics at the best epoch:
+  samples            : 550
+  QWK                : 0.8938   <-- headline metric
+  accuracy           : 0.7982
+  balanced accuracy  : 0.6889
+  macro F1           : 0.6654
+  macro ROC-AUC      : 0.9420
+  per-class recall   :
+      0 No DR              recall 0.985  (n=271)
+      1 Mild               recall 0.643  (n=56)
+      2 Moderate           recall 0.627  (n=150)
+      3 Severe             recall 0.690  (n=29)
+      4 Proliferative DR   recall 0.500  (n=44)
+01:04:48 | INFO    | train.effnetb3_weighted | Artefacts in: C:\Users\ishra\Downloads\dr_project\dr_project\experiments\effnetb3_weighted
+01:04:48 | INFO    | train.effnetb3_weighted | ====================================================================

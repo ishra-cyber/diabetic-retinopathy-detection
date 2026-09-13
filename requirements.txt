@@ -1,0 +1,69 @@
+# ============================================================================
+# Intelligent Diabetic Retinopathy Detection and Progress Monitoring
+# requirements.txt
+#
+# NOTE ON PYTORCH:
+#   Do NOT install torch from this file. Install it first, separately, with the
+#   CUDA build that matches your NVIDIA driver (see README / setup commands).
+#   Then run:  pip install -r requirements.txt
+# ============================================================================
+
+# --- Core scientific stack -------------------------------------------------
+numpy>=1.26,<2.2
+pandas>=2.1
+scipy>=1.11
+
+# --- Image I/O and processing ---------------------------------------------
+opencv-python-headless>=4.9        # cv2: cropping, CLAHE, resizing
+Pillow>=10.2                       # PIL: Streamlit / report image handling
+
+# --- Model zoo -------------------------------------------------------------
+timm>=1.0.3                        # EfficientNet-B3, ResNet50 pretrained weights
+
+# NOTE: augmentation is done with torchvision.transforms.v2, which ships with
+# torch - no extra install, no C++ compiler needed. Albumentations is optional
+# and lives in requirements-optional.txt (see the note at the bottom of this file).
+
+# --- Metrics and evaluation -----------------------------------------------
+scikit-learn>=1.4                  # P/R/F1, confusion matrix, ROC-AUC, QWK, splits
+
+# --- Plotting --------------------------------------------------------------
+matplotlib>=3.8
+seaborn>=0.13
+
+# --- Web application -------------------------------------------------------
+streamlit>=1.33
+plotly>=5.20                       # interactive progression charts
+
+# --- Reporting -------------------------------------------------------------
+reportlab>=4.1                     # downloadable PDF report
+
+# --- Dataset acquisition ---------------------------------------------------
+kaggle>=1.8.0                      # Kaggle API client (1.8+ supports both
+                                   # legacy kaggle.json and modern API tokens)
+
+# --- Config, utils, progress ----------------------------------------------
+PyYAML>=6.0
+tqdm>=4.66
+python-dotenv>=1.0
+
+# --- Notebooks -------------------------------------------------------------
+jupyter>=1.0
+ipykernel>=6.29                    # lets VS Code run notebooks in this venv
+ipywidgets>=8.1                    # progress bars inside notebooks
+
+# --- Development / testing -------------------------------------------------
+pytest>=8.0
+
+# ============================================================================
+# OPTIONAL EXTRAS - see requirements-optional.txt
+#
+# Albumentations is deliberately NOT installed here. On Windows it pulls in
+# `albucore` -> `stringzilla`, which has no prebuilt wheel for some Python
+# versions and then tries to compile C++ - failing with
+# "Microsoft Visual C++ 14.0 or greater is required".
+#
+# This project uses torchvision.transforms.v2 instead, which is equivalent for
+# image classification and needs no compiler. Install the extras only if you
+# specifically want them:   pip install -r requirements-optional.txt
+# ============================================================================

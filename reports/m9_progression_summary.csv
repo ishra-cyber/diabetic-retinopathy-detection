@@ -1,0 +1,5 @@
+patient_id,n_visits,first_date,latest_date,first_stage,latest_stage,stage_change,trend,slope_per_year,days_observed,mean_confidence,is_simulated
+SIM003,6,2023-09-29,2026-03-30,2,2,0,stable,-0.0,913,0.7486,True
+SIM001,5,2024-03-27,2026-03-27,0,3,3,worsening,1.4008,730,0.7559,True
+SIM004,5,2024-03-27,2026-03-27,1,0,-1,improving,-0.6005,730,0.7849,True
+SIM002,4,2024-09-23,2026-03-24,3,0,-3,improving,-2.0025,547,0.7867,True

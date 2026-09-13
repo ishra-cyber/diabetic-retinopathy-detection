@@ -1,0 +1,60 @@
+{
+  // Ctrl+Shift+P -> "Tasks: Run Task"  (or Ctrl+Shift+B for the default build task)
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup: create venv + install everything",
+      "type": "shell",
+      "command": "powershell",
+      "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/setup.ps1"],
+      "windows": {
+        "command": "powershell",
+        "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/setup.ps1"]
+      },
+      "linux": { "command": "bash", "args": ["${workspaceFolder}/setup.sh"] },
+      "osx": { "command": "bash", "args": ["${workspaceFolder}/setup.sh"] },
+      "problemMatcher": []
+    },
+    {
+      "label": "Check environment",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "scripts.check_env"],
+      "options": { "cwd": "${workspaceFolder}", "env": { "PYTHONPATH": "${workspaceFolder}" } },
+      "problemMatcher": []
+    },
+    {
+      "label": "M1: Download dataset",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "scripts.m1_download_data"],
+      "options": { "cwd": "${workspaceFolder}", "env": { "PYTHONPATH": "${workspaceFolder}" } },
+      "problemMatcher": []
+    },
+    {
+      "label": "M1: Inspect dataset",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "scripts.m1_inspect_dataset"],
+      "options": { "cwd": "${workspaceFolder}", "env": { "PYTHONPATH": "${workspaceFolder}" } },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run tests",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "pytest", "-q"],
+      "group": { "kind": "test", "isDefault": true },
+      "options": { "cwd": "${workspaceFolder}", "env": { "PYTHONPATH": "${workspaceFolder}" } },
+      "problemMatcher": []
+    },
+    {
+      "label": "Freeze environment to reports/environment.txt",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "pip", "freeze"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
+}

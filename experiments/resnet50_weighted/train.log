@@ -1,0 +1,209 @@
+00:48:21 | INFO    | train.resnet50_weighted | ====================================================================
+00:48:21 | INFO    | train.resnet50_weighted |   RUN: resnet50_weighted
+00:48:21 | INFO    | train.resnet50_weighted | ====================================================================
+00:48:21 | INFO    | train.resnet50_weighted | Device: NVIDIA GeForce RTX 3050 6GB Laptop GPU (6.4 GB VRAM)
+00:48:21 | INFO    | train.resnet50_weighted | Mixed precision (AMP): True
+00:48:21 | INFO    | train.resnet50_weighted | Train: 2562 images (2562 from cache) | Val: 550 images (550 from cache)
+00:48:21 | INFO    | train.resnet50_weighted | Train class counts: [1263, 258, 699, 135, 207]
+00:48:21 | INFO    | train.resnet50_weighted | Split fingerprint: 415bcc1c575a
+00:48:23 | INFO    | train.resnet50_weighted | Model:
+  backbone   : resnet50
+  parameters : 23,518,277 total | 23,518,277 trainable
+  note       : Residual connections; the standard CNN baseline (~25.6M params)
+00:48:23 | INFO    | train.resnet50_weighted | Forward check passed: output shape (2, 5)
+00:48:23 | INFO    | train.resnet50_weighted | Weighted cross-entropy, weights from the TRAIN split:
+00:48:23 | INFO    | train.resnet50_weighted |     No DR              0.2159
+00:48:23 | INFO    | train.resnet50_weighted |     Mild               1.0569
+00:48:23 | INFO    | train.resnet50_weighted |     Moderate           0.3901
+00:48:23 | INFO    | train.resnet50_weighted |     Severe             2.0198
+00:48:23 | INFO    | train.resnet50_weighted |     Proliferative DR   1.3173
+00:48:23 | INFO    | train.resnet50_weighted | Epochs 20 | batch 8 x accum 2 = effective 16 | 160 optimiser steps/epoch
+00:48:23 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:48:23 | INFO    | train.resnet50_weighted | Epoch 1/20
+00:48:39 | INFO    | train.resnet50_weighted |     batch   50/320   loss 1.6089  lr 3.13e-05
+00:48:44 | INFO    | train.resnet50_weighted |     batch  100/320   loss 1.6059  lr 6.25e-05
+00:48:49 | INFO    | train.resnet50_weighted |     batch  150/320   loss 1.5987  lr 9.38e-05
+00:48:54 | INFO    | train.resnet50_weighted |     batch  200/320   loss 1.5918  lr 1.25e-04
+00:48:59 | INFO    | train.resnet50_weighted |     batch  250/320   loss 1.5783  lr 1.56e-04
+00:49:03 | INFO    | train.resnet50_weighted |     batch  300/320   loss 1.5512  lr 1.88e-04
+00:49:14 | INFO    | train.resnet50_weighted | train_loss 1.5394 | val_loss 1.3619 | val_QWK 0.5878 | val_acc 0.6891 | 51s (ETA 16 min)
+00:49:14 | INFO    | train.resnet50_weighted |   new best val_qwk = 0.5878 (+0.5878) - saving best.pt
+00:49:14 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:49:14 | INFO    | train.resnet50_weighted | Epoch 2/20
+00:49:19 | INFO    | train.resnet50_weighted |     batch   50/320   loss 1.3095  lr 2.00e-04
+00:49:24 | INFO    | train.resnet50_weighted |     batch  100/320   loss 1.2346  lr 2.00e-04
+00:49:28 | INFO    | train.resnet50_weighted |     batch  150/320   loss 1.2048  lr 2.00e-04
+00:49:33 | INFO    | train.resnet50_weighted |     batch  200/320   loss 1.1968  lr 1.99e-04
+00:49:38 | INFO    | train.resnet50_weighted |     batch  250/320   loss 1.1751  lr 1.99e-04
+00:49:42 | INFO    | train.resnet50_weighted |     batch  300/320   loss 1.1535  lr 1.99e-04
+00:49:46 | INFO    | train.resnet50_weighted | train_loss 1.1432 | val_loss 0.9530 | val_QWK 0.8332 | val_acc 0.6800 | 32s (ETA 12 min)
+00:49:46 | INFO    | train.resnet50_weighted |   new best val_qwk = 0.8332 (+0.2454) - saving best.pt
+00:49:47 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:49:47 | INFO    | train.resnet50_weighted | Epoch 3/20
+00:49:51 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.9696  lr 1.98e-04
+00:49:56 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.9596  lr 1.98e-04
+00:50:01 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.9687  lr 1.97e-04
+00:50:05 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.9545  lr 1.96e-04
+00:50:10 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.9477  lr 1.96e-04
+00:50:14 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.9596  lr 1.95e-04
+00:50:18 | INFO    | train.resnet50_weighted | train_loss 0.9662 | val_loss 0.8894 | val_QWK 0.8300 | val_acc 0.7673 | 32s (ETA 11 min)
+00:50:18 | INFO    | train.resnet50_weighted |   no improvement (1/5) - best val_qwk 0.8332 at epoch 2
+00:50:18 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:50:18 | INFO    | train.resnet50_weighted | Epoch 4/20
+00:50:23 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.9012  lr 1.94e-04
+00:50:28 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.8836  lr 1.93e-04
+00:50:32 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.9096  lr 1.92e-04
+00:50:37 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.9146  lr 1.91e-04
+00:50:42 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.9140  lr 1.90e-04
+00:50:46 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.9035  lr 1.89e-04
+00:50:51 | INFO    | train.resnet50_weighted | train_loss 0.8993 | val_loss 0.8689 | val_QWK 0.8366 | val_acc 0.7455 | 33s (ETA 10 min)
+00:50:51 | INFO    | train.resnet50_weighted |   new best val_qwk = 0.8366 (+0.0034) - saving best.pt
+00:50:52 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:50:52 | INFO    | train.resnet50_weighted | Epoch 5/20
+00:50:59 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.8547  lr 1.87e-04
+00:51:05 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.9030  lr 1.86e-04
+00:51:12 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.8787  lr 1.84e-04
+00:51:18 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.8865  lr 1.83e-04
+00:51:25 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.8800  lr 1.81e-04
+00:51:31 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.8699  lr 1.80e-04
+00:51:37 | INFO    | train.resnet50_weighted | train_loss 0.8670 | val_loss 0.8052 | val_QWK 0.8677 | val_acc 0.8018 | 45s (ETA 10 min)
+00:51:37 | INFO    | train.resnet50_weighted |   new best val_qwk = 0.8677 (+0.0311) - saving best.pt
+00:51:37 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:51:37 | INFO    | train.resnet50_weighted | Epoch 6/20
+00:51:44 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.7504  lr 1.78e-04
+00:51:51 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.7198  lr 1.76e-04
+00:51:55 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.7570  lr 1.74e-04
+00:52:00 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.7549  lr 1.73e-04
+00:52:05 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.7677  lr 1.71e-04
+00:52:09 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.7993  lr 1.69e-04
+00:52:13 | INFO    | train.resnet50_weighted | train_loss 0.8020 | val_loss 0.8120 | val_QWK 0.8642 | val_acc 0.7855 | 36s (ETA 9 min)
+00:52:13 | INFO    | train.resnet50_weighted |   no improvement (1/5) - best val_qwk 0.8677 at epoch 5
+00:52:13 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:52:13 | INFO    | train.resnet50_weighted | Epoch 7/20
+00:52:18 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.6824  lr 1.66e-04
+00:52:22 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.7502  lr 1.64e-04
+00:52:27 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.7420  lr 1.62e-04
+00:52:32 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.7449  lr 1.60e-04
+00:52:36 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.7495  lr 1.58e-04
+00:52:41 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.7546  lr 1.56e-04
+00:52:45 | INFO    | train.resnet50_weighted | train_loss 0.7564 | val_loss 0.8223 | val_QWK 0.8825 | val_acc 0.8164 | 32s (ETA 8 min)
+00:52:45 | INFO    | train.resnet50_weighted |   new best val_qwk = 0.8825 (+0.0148) - saving best.pt
+00:52:45 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:52:45 | INFO    | train.resnet50_weighted | Epoch 8/20
+00:52:50 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.6569  lr 1.53e-04
+00:52:54 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.6642  lr 1.51e-04
+00:52:59 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.7019  lr 1.49e-04
+00:53:04 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.7144  lr 1.46e-04
+00:53:08 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.7112  lr 1.44e-04
+00:53:13 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.7102  lr 1.42e-04
+00:53:17 | INFO    | train.resnet50_weighted | train_loss 0.7125 | val_loss 0.8134 | val_QWK 0.8815 | val_acc 0.8164 | 32s (ETA 7 min)
+00:53:17 | INFO    | train.resnet50_weighted |   no improvement (1/5) - best val_qwk 0.8825 at epoch 7
+00:53:17 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:53:17 | INFO    | train.resnet50_weighted | Epoch 9/20
+00:53:22 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.6063  lr 1.39e-04
+00:53:26 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.6295  lr 1.36e-04
+00:53:31 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.6485  lr 1.34e-04
+00:53:36 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.6608  lr 1.31e-04
+00:53:40 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.6708  lr 1.29e-04
+00:53:45 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.6621  lr 1.26e-04
+00:53:49 | INFO    | train.resnet50_weighted | train_loss 0.6742 | val_loss 0.8757 | val_QWK 0.8785 | val_acc 0.8036 | 32s (ETA 7 min)
+00:53:49 | INFO    | train.resnet50_weighted |   no improvement (2/5) - best val_qwk 0.8825 at epoch 7
+00:53:49 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:53:49 | INFO    | train.resnet50_weighted | Epoch 10/20
+00:53:54 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.7842  lr 1.23e-04
+00:53:58 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.6619  lr 1.20e-04
+00:54:03 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.6619  lr 1.18e-04
+00:54:07 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.6367  lr 1.15e-04
+00:54:12 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.6197  lr 1.13e-04
+00:54:17 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.6336  lr 1.10e-04
+00:54:21 | INFO    | train.resnet50_weighted | train_loss 0.6387 | val_loss 0.8925 | val_QWK 0.8685 | val_acc 0.7964 | 32s (ETA 6 min)
+00:54:21 | INFO    | train.resnet50_weighted |   no improvement (3/5) - best val_qwk 0.8825 at epoch 7
+00:54:21 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:54:21 | INFO    | train.resnet50_weighted | Epoch 11/20
+00:54:25 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.6504  lr 1.07e-04
+00:54:30 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.6182  lr 1.04e-04
+00:54:35 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.6161  lr 1.02e-04
+00:54:39 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.6110  lr 9.91e-05
+00:54:44 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.6275  lr 9.65e-05
+00:54:49 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.6149  lr 9.39e-05
+00:54:53 | INFO    | train.resnet50_weighted | train_loss 0.6202 | val_loss 0.8472 | val_QWK 0.8851 | val_acc 0.8091 | 32s (ETA 5 min)
+00:54:53 | INFO    | train.resnet50_weighted |   new best val_qwk = 0.8851 (+0.0026) - saving best.pt
+00:54:53 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:54:53 | INFO    | train.resnet50_weighted | Epoch 12/20
+00:54:57 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.5771  lr 9.04e-05
+00:55:02 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.5389  lr 8.78e-05
+00:55:07 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.5454  lr 8.53e-05
+00:55:11 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.5828  lr 8.28e-05
+00:55:16 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.5871  lr 8.03e-05
+00:55:21 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.5890  lr 7.78e-05
+00:55:25 | INFO    | train.resnet50_weighted | train_loss 0.5888 | val_loss 0.9082 | val_QWK 0.8949 | val_acc 0.8073 | 32s (ETA 5 min)
+00:55:25 | INFO    | train.resnet50_weighted |   new best val_qwk = 0.8949 (+0.0098) - saving best.pt
+00:55:25 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:55:25 | INFO    | train.resnet50_weighted | Epoch 13/20
+00:55:29 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.5675  lr 7.43e-05
+00:55:34 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.5332  lr 7.19e-05
+00:55:39 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.5580  lr 6.94e-05
+00:55:43 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.5355  lr 6.70e-05
+00:55:48 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.5191  lr 6.46e-05
+00:55:53 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.5254  lr 6.23e-05
+00:55:57 | INFO    | train.resnet50_weighted | train_loss 0.5207 | val_loss 0.9174 | val_QWK 0.8857 | val_acc 0.8127 | 32s (ETA 4 min)
+00:55:57 | INFO    | train.resnet50_weighted |   no improvement (1/5) - best val_qwk 0.8949 at epoch 12
+00:55:57 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:55:57 | INFO    | train.resnet50_weighted | Epoch 14/20
+00:56:01 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.4906  lr 5.90e-05
+00:56:06 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.5073  lr 5.67e-05
+00:56:11 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.5286  lr 5.44e-05
+00:56:15 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.5240  lr 5.22e-05
+00:56:20 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.5182  lr 5.00e-05
+00:56:25 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.5308  lr 4.78e-05
+00:56:29 | INFO    | train.resnet50_weighted | train_loss 0.5212 | val_loss 0.9677 | val_QWK 0.8852 | val_acc 0.8164 | 32s (ETA 3 min)
+00:56:29 | INFO    | train.resnet50_weighted |   no improvement (2/5) - best val_qwk 0.8949 at epoch 12
+00:56:29 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:56:29 | INFO    | train.resnet50_weighted | Epoch 15/20
+00:56:33 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.6475  lr 4.48e-05
+00:56:38 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.5432  lr 4.27e-05
+00:56:43 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.5370  lr 4.07e-05
+00:56:47 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.5372  lr 3.87e-05
+00:56:52 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.5383  lr 3.67e-05
+00:56:57 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.5427  lr 3.48e-05
+00:57:01 | INFO    | train.resnet50_weighted | train_loss 0.5394 | val_loss 0.9655 | val_QWK 0.8767 | val_acc 0.8109 | 32s (ETA 3 min)
+00:57:01 | INFO    | train.resnet50_weighted |   no improvement (3/5) - best val_qwk 0.8949 at epoch 12
+00:57:01 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:57:01 | INFO    | train.resnet50_weighted | Epoch 16/20
+00:57:05 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.5150  lr 3.22e-05
+00:57:10 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.4802  lr 3.03e-05
+00:57:15 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.4565  lr 2.86e-05
+00:57:19 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.4766  lr 2.69e-05
+00:57:24 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.4769  lr 2.52e-05
+00:57:29 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.4736  lr 2.36e-05
+00:57:33 | INFO    | train.resnet50_weighted | train_loss 0.4687 | val_loss 0.9252 | val_QWK 0.8921 | val_acc 0.8145 | 32s (ETA 2 min)
+00:57:33 | INFO    | train.resnet50_weighted |   no improvement (4/5) - best val_qwk 0.8949 at epoch 12
+00:57:33 | INFO    | train.resnet50_weighted | --------------------------------------------------------------------
+00:57:33 | INFO    | train.resnet50_weighted | Epoch 17/20
+00:57:37 | INFO    | train.resnet50_weighted |     batch   50/320   loss 0.5303  lr 2.14e-05
+00:57:42 | INFO    | train.resnet50_weighted |     batch  100/320   loss 0.4733  lr 1.99e-05
+00:57:47 | INFO    | train.resnet50_weighted |     batch  150/320   loss 0.5065  lr 1.85e-05
+00:57:51 | INFO    | train.resnet50_weighted |     batch  200/320   loss 0.5110  lr 1.71e-05
+00:57:56 | INFO    | train.resnet50_weighted |     batch  250/320   loss 0.4998  lr 1.57e-05
+00:58:00 | INFO    | train.resnet50_weighted |     batch  300/320   loss 0.5032  lr 1.45e-05
+00:58:04 | INFO    | train.resnet50_weighted | train_loss 0.4969 | val_loss 0.9268 | val_QWK 0.8945 | val_acc 0.8218 | 32s (ETA 2 min)
+00:58:04 | INFO    | train.resnet50_weighted |   no improvement (5/5) - best val_qwk 0.8949 at epoch 12
+00:58:04 | INFO    | train.resnet50_weighted | Early stopping triggered.
+00:58:05 | INFO    | train.resnet50_weighted | ====================================================================
+00:58:05 | INFO    | train.resnet50_weighted | Finished resnet50_weighted in 9.7 min (17 epochs, mean 34s/epoch)
+00:58:05 | INFO    | train.resnet50_weighted | Best val_qwk = 0.8949 at epoch 12
+00:58:05 | INFO    | train.resnet50_weighted | Validation metrics at the best epoch:
+  samples            : 550
+  QWK                : 0.8949   <-- headline metric
+  accuracy           : 0.8073
+  balanced accuracy  : 0.6779
+  macro F1           : 0.6698
+  macro ROC-AUC      : 0.9390
+  per-class recall   :
+      0 No DR              recall 0.993  (n=271)
+      1 Mild               recall 0.607  (n=56)
+      2 Moderate           recall 0.680  (n=150)
+      3 Severe             recall 0.655  (n=29)
+      4 Proliferative DR   recall 0.455  (n=44)
+00:58:05 | INFO    | train.resnet50_weighted | Artefacts in: C:\Users\ishra\Downloads\dr_project\dr_project\experiments\resnet50_weighted
+00:58:05 | INFO    | train.resnet50_weighted | ====================================================================

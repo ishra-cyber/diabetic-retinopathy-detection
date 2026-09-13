@@ -1,0 +1,47 @@
+00:45:55 | INFO    | train.smoke_densenet121 | ====================================================================
+00:45:55 | INFO    | train.smoke_densenet121 |   RUN: smoke_densenet121
+00:45:55 | INFO    | train.smoke_densenet121 | ====================================================================
+00:45:55 | INFO    | train.smoke_densenet121 | Device: NVIDIA GeForce RTX 3050 6GB Laptop GPU (6.4 GB VRAM)
+00:45:55 | INFO    | train.smoke_densenet121 | Mixed precision (AMP): True
+00:45:56 | WARNING | train.smoke_densenet121 | SMOKE TEST: limited to 64 train / 32 val samples. Results are meaningless - this only checks the code runs.
+00:45:56 | INFO    | train.smoke_densenet121 | Train: 64 images (64 from cache) | Val: 32 images (32 from cache)
+00:45:56 | INFO    | train.smoke_densenet121 | Train class counts: [26, 8, 20, 4, 6]
+00:45:56 | INFO    | train.smoke_densenet121 | Split fingerprint: 415bcc1c575a
+00:45:58 | INFO    | train.smoke_densenet121 | Model:
+  backbone   : densenet121
+  parameters : 6,958,981 total | 6,958,981 trainable
+  note       : Dense connectivity, heavy feature reuse (~8M params)
+00:45:58 | INFO    | train.smoke_densenet121 | Forward check passed: output shape (2, 5)
+00:45:58 | INFO    | train.smoke_densenet121 | Weighted cross-entropy, weights from the TRAIN split:
+00:45:58 | INFO    | train.smoke_densenet121 |     No DR              0.3052
+00:45:58 | INFO    | train.smoke_densenet121 |     Mild               0.9919
+00:45:58 | INFO    | train.smoke_densenet121 |     Moderate           0.3967
+00:45:58 | INFO    | train.smoke_densenet121 |     Severe             1.9837
+00:45:58 | INFO    | train.smoke_densenet121 |     Proliferative DR   1.3225
+00:45:58 | INFO    | train.smoke_densenet121 | Epochs 2 | batch 6 x accum 3 = effective 18 | 4 optimiser steps/epoch
+00:45:58 | INFO    | train.smoke_densenet121 | --------------------------------------------------------------------
+00:45:58 | INFO    | train.smoke_densenet121 | Epoch 1/2
+00:46:11 | INFO    | train.smoke_densenet121 | train_loss 1.6028 | val_loss 1.7320 | val_QWK 0.2488 | val_acc 0.3750 | 13s (ETA 0 min)
+00:46:11 | INFO    | train.smoke_densenet121 |   new best val_qwk = 0.2488 (+0.2488) - saving best.pt
+00:46:11 | INFO    | train.smoke_densenet121 | --------------------------------------------------------------------
+00:46:11 | INFO    | train.smoke_densenet121 | Epoch 2/2
+00:46:12 | INFO    | train.smoke_densenet121 | train_loss 1.5677 | val_loss 1.5630 | val_QWK 0.2313 | val_acc 0.5000 | 1s (ETA 0 min)
+00:46:12 | INFO    | train.smoke_densenet121 |   no improvement (1/5) - best val_qwk 0.2488 at epoch 1
+00:46:12 | INFO    | train.smoke_densenet121 | ====================================================================
+00:46:12 | INFO    | train.smoke_densenet121 | Finished smoke_densenet121 in 0.2 min (2 epochs, mean 7s/epoch)
+00:46:12 | INFO    | train.smoke_densenet121 | Best val_qwk = 0.2488 at epoch 1
+00:46:12 | INFO    | train.smoke_densenet121 | Validation metrics at the best epoch:
+  samples            : 32
+  QWK                : 0.2488   <-- headline metric
+  accuracy           : 0.3750
+  balanced accuracy  : 0.3375
+  macro F1           : 0.1717
+  macro ROC-AUC      : 0.5161
+  per-class recall   :
+      0 No DR              recall 0.688  (n=16)
+      1 Mild               recall 1.000  (n=1)
+      2 Moderate           recall 0.000  (n=11)
+      3 Severe             recall 0.000  (n=1)
+      4 Proliferative DR   recall 0.000  (n=3)
+00:46:12 | INFO    | train.smoke_densenet121 | Artefacts in: C:\Users\ishra\Downloads\dr_project\dr_project\experiments\smoke_densenet121
+00:46:12 | INFO    | train.smoke_densenet121 | ====================================================================

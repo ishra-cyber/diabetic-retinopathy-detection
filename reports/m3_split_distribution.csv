@@ -1,0 +1,6 @@
+label,class_name,train_n,train_pct,val_n,val_pct,test_n,test_pct,overall_pct,drift_pp
+0,No DR,1263,49.3,271,49.27,271,49.27,49.29,0.02
+1,Mild,258,10.07,56,10.18,56,10.18,10.1,0.08
+2,Moderate,699,27.28,150,27.27,150,27.27,27.28,0.01
+3,Severe,135,5.27,29,5.27,29,5.27,5.27,0.0
+4,Proliferative DR,207,8.08,44,8.0,44,8.0,8.06,0.06

@@ -1,0 +1,12 @@
+{
+  // VS Code will offer to install these when the folder is opened.
+  "recommendations": [
+    "ms-python.python",           // interpreter, debugging, test runner
+    "ms-python.vscode-pylance",   // fast IntelliSense + type checking
+    "ms-toolsai.jupyter",         // notebooks in notebooks/
+    "charliermarsh.ruff",         // fast linting (optional but recommended)
+    "njpwerner.autodocstring",    // docstring scaffolding
+    "mechatroner.rainbow-csv",    // readable CSVs in data/splits and reports/
+    "redhat.vscode-yaml"          // schema-aware editing of configs/config.yaml
+  ]
+}

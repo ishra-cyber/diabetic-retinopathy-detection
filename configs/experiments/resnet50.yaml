@@ -1,0 +1,16 @@
+# Experiment: ResNet50 (the literature baseline)
+#
+# Run:  python -m scripts.m4_train --experiment resnet50
+#
+# NOTE: same image_size (300) as the other two on purpose. Varying resolution
+# between architectures would confound the comparison.
+
+run_name: "resnet50_weighted"
+
+training:
+  backbone: "resnet50"
+  batch_size: 8
+  grad_accum_steps: 2
+  lr: 2.0e-4                   # ResNet50 has ~2x the parameters; a slightly
+                               # lower LR is the usual choice for stability
+  imbalance_strategy: "weighted_loss"

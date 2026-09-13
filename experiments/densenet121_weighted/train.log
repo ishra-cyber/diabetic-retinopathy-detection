@@ -1,0 +1,195 @@
+01:04:57 | INFO    | train.densenet121_weighted | ====================================================================
+01:04:57 | INFO    | train.densenet121_weighted |   RUN: densenet121_weighted
+01:04:57 | INFO    | train.densenet121_weighted | ====================================================================
+01:04:57 | INFO    | train.densenet121_weighted | Device: NVIDIA GeForce RTX 3050 6GB Laptop GPU (6.4 GB VRAM)
+01:04:57 | INFO    | train.densenet121_weighted | Mixed precision (AMP): True
+01:04:57 | INFO    | train.densenet121_weighted | Train: 2562 images (2562 from cache) | Val: 550 images (550 from cache)
+01:04:57 | INFO    | train.densenet121_weighted | Train class counts: [1263, 258, 699, 135, 207]
+01:04:57 | INFO    | train.densenet121_weighted | Split fingerprint: 415bcc1c575a
+01:05:00 | INFO    | train.densenet121_weighted | Model:
+  backbone   : densenet121
+  parameters : 6,958,981 total | 6,958,981 trainable
+  note       : Dense connectivity, heavy feature reuse (~8M params)
+01:05:01 | INFO    | train.densenet121_weighted | Forward check passed: output shape (2, 5)
+01:05:01 | INFO    | train.densenet121_weighted | Weighted cross-entropy, weights from the TRAIN split:
+01:05:01 | INFO    | train.densenet121_weighted |     No DR              0.2159
+01:05:01 | INFO    | train.densenet121_weighted |     Mild               1.0569
+01:05:01 | INFO    | train.densenet121_weighted |     Moderate           0.3901
+01:05:01 | INFO    | train.densenet121_weighted |     Severe             2.0198
+01:05:01 | INFO    | train.densenet121_weighted |     Proliferative DR   1.3173
+01:05:01 | INFO    | train.densenet121_weighted | Epochs 20 | batch 6 x accum 3 = effective 18 | 143 optimiser steps/epoch
+01:05:01 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:05:01 | INFO    | train.densenet121_weighted | Epoch 1/20
+01:05:19 | INFO    | train.densenet121_weighted |     batch   50/427   loss 1.6263  lr 3.36e-05
+01:05:26 | INFO    | train.densenet121_weighted |     batch  100/427   loss 1.6090  lr 6.92e-05
+01:05:32 | INFO    | train.densenet121_weighted |     batch  150/427   loss 1.5484  lr 1.05e-04
+01:05:40 | INFO    | train.densenet121_weighted |     batch  200/427   loss 1.4928  lr 1.38e-04
+01:05:46 | INFO    | train.densenet121_weighted |     batch  250/427   loss 1.4357  lr 1.74e-04
+01:05:52 | INFO    | train.densenet121_weighted |     batch  300/427   loss 1.3899  lr 2.10e-04
+01:05:59 | INFO    | train.densenet121_weighted |     batch  350/427   loss 1.3395  lr 2.43e-04
+01:06:06 | INFO    | train.densenet121_weighted |     batch  400/427   loss 1.2948  lr 2.79e-04
+01:06:17 | INFO    | train.densenet121_weighted | train_loss 1.2746 | val_loss 1.0092 | val_QWK 0.8156 | val_acc 0.7309 | 77s (ETA 24 min)
+01:06:17 | INFO    | train.densenet121_weighted |   new best val_qwk = 0.8156 (+0.8156) - saving best.pt
+01:06:18 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:06:18 | INFO    | train.densenet121_weighted | Epoch 2/20
+01:06:23 | INFO    | train.densenet121_weighted |     batch   50/427   loss 1.0052  lr 3.00e-04
+01:06:30 | INFO    | train.densenet121_weighted |     batch  100/427   loss 1.0108  lr 3.00e-04
+01:06:36 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.9798  lr 3.00e-04
+01:06:41 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.9591  lr 3.00e-04
+01:06:46 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.9632  lr 2.99e-04
+01:06:50 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.9627  lr 2.99e-04
+01:06:55 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.9733  lr 2.99e-04
+01:07:00 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.9676  lr 2.98e-04
+01:07:05 | INFO    | train.densenet121_weighted | train_loss 0.9682 | val_loss 0.8018 | val_QWK 0.8659 | val_acc 0.7727 | 48s (ETA 19 min)
+01:07:05 | INFO    | train.densenet121_weighted |   new best val_qwk = 0.8659 (+0.0503) - saving best.pt
+01:07:05 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:07:05 | INFO    | train.densenet121_weighted | Epoch 3/20
+01:07:10 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.8196  lr 2.98e-04
+01:07:15 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.8677  lr 2.97e-04
+01:07:19 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.8677  lr 2.96e-04
+01:07:24 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.8884  lr 2.96e-04
+01:07:28 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.8784  lr 2.95e-04
+01:07:33 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.8722  lr 2.94e-04
+01:07:38 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.8687  lr 2.93e-04
+01:07:43 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.8738  lr 2.93e-04
+01:07:48 | INFO    | train.densenet121_weighted | train_loss 0.8809 | val_loss 0.8932 | val_QWK 0.8803 | val_acc 0.8273 | 42s (ETA 16 min)
+01:07:48 | INFO    | train.densenet121_weighted |   new best val_qwk = 0.8803 (+0.0144) - saving best.pt
+01:07:48 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:07:48 | INFO    | train.densenet121_weighted | Epoch 4/20
+01:07:53 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.8214  lr 2.91e-04
+01:07:57 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.8606  lr 2.90e-04
+01:08:02 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.8320  lr 2.89e-04
+01:08:06 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.8541  lr 2.88e-04
+01:08:11 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.8605  lr 2.87e-04
+01:08:16 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.8492  lr 2.86e-04
+01:08:21 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.8432  lr 2.84e-04
+01:08:25 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.8511  lr 2.83e-04
+01:08:30 | INFO    | train.densenet121_weighted | train_loss 0.8499 | val_loss 0.8538 | val_QWK 0.8491 | val_acc 0.8018 | 43s (ETA 14 min)
+01:08:30 | INFO    | train.densenet121_weighted |   no improvement (1/5) - best val_qwk 0.8803 at epoch 3
+01:08:30 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:08:30 | INFO    | train.densenet121_weighted | Epoch 5/20
+01:08:35 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.6582  lr 2.81e-04
+01:08:40 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.8035  lr 2.79e-04
+01:08:44 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.7999  lr 2.78e-04
+01:08:49 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.7590  lr 2.76e-04
+01:08:54 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.7620  lr 2.75e-04
+01:08:59 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.7701  lr 2.73e-04
+01:09:05 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.7688  lr 2.72e-04
+01:09:10 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.7714  lr 2.70e-04
+01:09:16 | INFO    | train.densenet121_weighted | train_loss 0.7704 | val_loss 0.7937 | val_QWK 0.8693 | val_acc 0.7673 | 45s (ETA 13 min)
+01:09:16 | INFO    | train.densenet121_weighted |   no improvement (2/5) - best val_qwk 0.8803 at epoch 3
+01:09:16 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:09:16 | INFO    | train.densenet121_weighted | Epoch 6/20
+01:09:21 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.7352  lr 2.67e-04
+01:09:26 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.6899  lr 2.65e-04
+01:09:31 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.7160  lr 2.63e-04
+01:09:37 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.7046  lr 2.62e-04
+01:09:42 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.7087  lr 2.60e-04
+01:09:47 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.7157  lr 2.58e-04
+01:09:53 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.7292  lr 2.56e-04
+01:09:58 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.7305  lr 2.53e-04
+01:10:03 | INFO    | train.densenet121_weighted | train_loss 0.7273 | val_loss 0.7831 | val_QWK 0.8715 | val_acc 0.7764 | 47s (ETA 12 min)
+01:10:03 | INFO    | train.densenet121_weighted |   no improvement (3/5) - best val_qwk 0.8803 at epoch 3
+01:10:03 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:10:03 | INFO    | train.densenet121_weighted | Epoch 7/20
+01:10:08 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.5565  lr 2.50e-04
+01:10:13 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.6371  lr 2.48e-04
+01:10:17 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.6792  lr 2.46e-04
+01:10:22 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.6546  lr 2.44e-04
+01:10:27 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.6618  lr 2.41e-04
+01:10:31 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.6906  lr 2.39e-04
+01:10:36 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.6901  lr 2.37e-04
+01:10:41 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.6958  lr 2.34e-04
+01:10:46 | INFO    | train.densenet121_weighted | train_loss 0.6927 | val_loss 0.9938 | val_QWK 0.8959 | val_acc 0.8000 | 43s (ETA 11 min)
+01:10:46 | INFO    | train.densenet121_weighted |   new best val_qwk = 0.8959 (+0.0156) - saving best.pt
+01:10:46 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:10:46 | INFO    | train.densenet121_weighted | Epoch 8/20
+01:10:51 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.5600  lr 2.31e-04
+01:10:55 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.5904  lr 2.28e-04
+01:11:00 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.6160  lr 2.26e-04
+01:11:04 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.6294  lr 2.23e-04
+01:11:09 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.6322  lr 2.21e-04
+01:11:14 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.6131  lr 2.18e-04
+01:11:18 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.6207  lr 2.16e-04
+01:11:23 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.6176  lr 2.13e-04
+01:11:28 | INFO    | train.densenet121_weighted | train_loss 0.6251 | val_loss 1.0253 | val_QWK 0.8992 | val_acc 0.7982 | 42s (ETA 10 min)
+01:11:28 | INFO    | train.densenet121_weighted |   new best val_qwk = 0.8992 (+0.0033) - saving best.pt
+01:11:28 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:11:28 | INFO    | train.densenet121_weighted | Epoch 9/20
+01:11:33 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.5129  lr 2.09e-04
+01:11:37 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.5511  lr 2.06e-04
+01:11:42 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.5648  lr 2.03e-04
+01:11:47 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.5947  lr 2.01e-04
+01:11:51 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.5752  lr 1.98e-04
+01:11:56 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.5914  lr 1.95e-04
+01:12:01 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.6017  lr 1.93e-04
+01:12:06 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.5917  lr 1.90e-04
+01:12:11 | INFO    | train.densenet121_weighted | train_loss 0.6048 | val_loss 0.8440 | val_QWK 0.8763 | val_acc 0.7800 | 42s (ETA 9 min)
+01:12:11 | INFO    | train.densenet121_weighted |   no improvement (1/5) - best val_qwk 0.8992 at epoch 8
+01:12:11 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:12:11 | INFO    | train.densenet121_weighted | Epoch 10/20
+01:12:16 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.5816  lr 1.85e-04
+01:12:21 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.5110  lr 1.83e-04
+01:12:25 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.5390  lr 1.80e-04
+01:12:30 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.5449  lr 1.77e-04
+01:12:34 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.5425  lr 1.74e-04
+01:12:39 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.5311  lr 1.71e-04
+01:12:44 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.5201  lr 1.69e-04
+01:12:48 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.5573  lr 1.66e-04
+01:12:54 | INFO    | train.densenet121_weighted | train_loss 0.5611 | val_loss 0.9303 | val_QWK 0.8854 | val_acc 0.7945 | 43s (ETA 8 min)
+01:12:54 | INFO    | train.densenet121_weighted |   no improvement (2/5) - best val_qwk 0.8992 at epoch 8
+01:12:54 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:12:54 | INFO    | train.densenet121_weighted | Epoch 11/20
+01:12:59 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.5197  lr 1.61e-04
+01:13:04 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.4898  lr 1.58e-04
+01:13:08 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.4637  lr 1.55e-04
+01:13:13 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.4929  lr 1.53e-04
+01:13:18 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.4933  lr 1.50e-04
+01:13:23 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.4897  lr 1.47e-04
+01:13:27 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.4957  lr 1.44e-04
+01:13:32 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.4922  lr 1.41e-04
+01:13:37 | INFO    | train.densenet121_weighted | train_loss 0.4934 | val_loss 1.1086 | val_QWK 0.8946 | val_acc 0.8036 | 43s (ETA 7 min)
+01:13:37 | INFO    | train.densenet121_weighted |   no improvement (3/5) - best val_qwk 0.8992 at epoch 8
+01:13:37 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:13:37 | INFO    | train.densenet121_weighted | Epoch 12/20
+01:13:42 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.5414  lr 1.37e-04
+01:13:47 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.4813  lr 1.34e-04
+01:13:52 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.4593  lr 1.31e-04
+01:13:57 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.4502  lr 1.28e-04
+01:14:01 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.4693  lr 1.25e-04
+01:14:06 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.4795  lr 1.22e-04
+01:14:11 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.4863  lr 1.20e-04
+01:14:16 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.4797  lr 1.17e-04
+01:14:21 | INFO    | train.densenet121_weighted | train_loss 0.4808 | val_loss 0.9239 | val_QWK 0.8977 | val_acc 0.8073 | 43s (ETA 6 min)
+01:14:21 | INFO    | train.densenet121_weighted |   no improvement (4/5) - best val_qwk 0.8992 at epoch 8
+01:14:21 | INFO    | train.densenet121_weighted | --------------------------------------------------------------------
+01:14:21 | INFO    | train.densenet121_weighted | Epoch 13/20
+01:14:25 | INFO    | train.densenet121_weighted |     batch   50/427   loss 0.3852  lr 1.13e-04
+01:14:30 | INFO    | train.densenet121_weighted |     batch  100/427   loss 0.3733  lr 1.10e-04
+01:14:35 | INFO    | train.densenet121_weighted |     batch  150/427   loss 0.3945  lr 1.07e-04
+01:14:41 | INFO    | train.densenet121_weighted |     batch  200/427   loss 0.4278  lr 1.04e-04
+01:14:46 | INFO    | train.densenet121_weighted |     batch  250/427   loss 0.4200  lr 1.02e-04
+01:14:51 | INFO    | train.densenet121_weighted |     batch  300/427   loss 0.4098  lr 9.88e-05
+01:14:55 | INFO    | train.densenet121_weighted |     batch  350/427   loss 0.3922  lr 9.63e-05
+01:15:00 | INFO    | train.densenet121_weighted |     batch  400/427   loss 0.3894  lr 9.36e-05
+01:15:05 | INFO    | train.densenet121_weighted | train_loss 0.3836 | val_loss 1.0501 | val_QWK 0.8982 | val_acc 0.8073 | 45s (ETA 5 min)
+01:15:05 | INFO    | train.densenet121_weighted |   no improvement (5/5) - best val_qwk 0.8992 at epoch 8
+01:15:05 | INFO    | train.densenet121_weighted | Early stopping triggered.
+01:15:05 | INFO    | train.densenet121_weighted | ====================================================================
+01:15:05 | INFO    | train.densenet121_weighted | Finished densenet121_weighted in 10.1 min (13 epochs, mean 46s/epoch)
+01:15:05 | INFO    | train.densenet121_weighted | Best val_qwk = 0.8992 at epoch 8
+01:15:05 | INFO    | train.densenet121_weighted | Validation metrics at the best epoch:
+  samples            : 550
+  QWK                : 0.8992   <-- headline metric
+  accuracy           : 0.7982
+  balanced accuracy  : 0.6524
+  macro F1           : 0.6450
+  macro ROC-AUC      : 0.9323
+  per-class recall   :
+      0 No DR              recall 0.993  (n=271)
+      1 Mild               recall 0.571  (n=56)
+      2 Moderate           recall 0.680  (n=150)
+      3 Severe             recall 0.586  (n=29)
+      4 Proliferative DR   recall 0.432  (n=44)
+01:15:05 | INFO    | train.densenet121_weighted | Artefacts in: C:\Users\ishra\Downloads\dr_project\dr_project\experiments\densenet121_weighted
+01:15:05 | INFO    | train.densenet121_weighted | ====================================================================

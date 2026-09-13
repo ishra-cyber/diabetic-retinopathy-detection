@@ -1,0 +1,78 @@
+{
+  // Press F5 and pick a configuration. Every entry runs from the project root
+  // with PYTHONPATH set, so `import src...` always works.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "M0: Check environment (GPU, packages, Kaggle)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "scripts.check_env",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "justMyCode": true
+    },
+    {
+      "name": "M1: Download APTOS dataset",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "scripts.m1_download_data",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "justMyCode": true
+    },
+    {
+      "name": "M1: Download dataset (--force)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "scripts.m1_download_data",
+      "args": ["--force"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" }
+    },
+    {
+      "name": "M1: Inspect dataset (sampled)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "scripts.m1_inspect_dataset",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "justMyCode": true
+    },
+    {
+      "name": "M1: Inspect dataset (--scan-all)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "scripts.m1_inspect_dataset",
+      "args": ["--scan-all"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" }
+    },
+    {
+      "name": "Debug: current Python file",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "justMyCode": false
+    },
+    {
+      "name": "Streamlit app (Milestone 10)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "streamlit",
+      "args": ["run", "app/app.py"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": { "PYTHONPATH": "${workspaceFolder}" },
+      "justMyCode": true
+    }
+  ]
+}

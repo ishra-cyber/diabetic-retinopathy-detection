@@ -1,0 +1,6 @@
+label,class_name,count,percent,ratio_to_majority
+0,No DR,1805,49.29,1.0
+1,Mild,370,10.1,4.88
+2,Moderate,999,27.28,1.81
+3,Severe,193,5.27,9.35
+4,Proliferative DR,295,8.06,6.12

@@ -1,0 +1,25 @@
+{
+  "seed": 42,
+  "fingerprint": "415bcc1c575a",
+  "stratified": true,
+  "sizes": {
+    "train": 2562,
+    "val": 550,
+    "test": 550
+  },
+  "class_weights_from_train": [
+    0.215897,
+    1.05689,
+    0.390097,
+    2.019834,
+    1.317283
+  ],
+  "class_names": [
+    "No DR",
+    "Mild",
+    "Moderate",
+    "Severe",
+    "Proliferative DR"
+  ],
+  "worst_class_share_drift_pp": 0.08
+}

@@ -1,0 +1,13 @@
+# Experiment: EfficientNet-B3 (the main model)
+# Merged on top of configs/config.yaml. Only the differences go here.
+#
+# Run:  python -m scripts.m4_train --experiment efficientnet_b3
+
+run_name: "effnetb3_weighted"
+
+training:
+  backbone: "efficientnet_b3"
+  batch_size: 8                # 6 GB VRAM at 300px with AMP
+  grad_accum_steps: 2          # effective batch 16
+  lr: 3.0e-4
+  imbalance_strategy: "weighted_loss"

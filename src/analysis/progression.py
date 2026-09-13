@@ -1,0 +1,287 @@
+"""
+Progression analysis across patient visits.
+File location: <project_root>/src/analysis/progression.py
+
+What this milestone can and cannot claim
+----------------------------------------
+APTOS 2019 contains no longitudinal data - one image per patient, no follow-up.
+So the progression module is demonstrated with **simulated** visit histories.
+Every simulated record is flagged in the database, labelled in the UI, and
+disclosed in the report.
+
+That limitation is not a weakness to hide; it is the honest boundary of what a
+student project on a public cross-sectional dataset can show. The logic here is
+real and would work unchanged on real longitudinal data - what is synthetic is
+the data it currently runs on.
+
+Trend definition
+----------------
+Severity is an ordinal 0-4 scale, so "progression" is the change in stage
+between the first and most recent visit:
+
+    worsening  : latest stage > first stage
+    improving  : latest stage < first stage
+    stable     : unchanged
+
+Plus a least-squares slope in stages-per-year, which captures direction across
+all visits rather than just the endpoints - a patient who went 0 -> 3 -> 1 is
+not the same as one who went 0 -> 1, even though both end up "worsening" by one
+grade.
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, List, Optional, Sequence
+
+import numpy as np
+import pandas as pd
+
+TREND_WORSENING = "worsening"
+TREND_IMPROVING = "improving"
+TREND_STABLE = "stable"
+TREND_INSUFFICIENT = "insufficient data"
+
+# Clinical follow-up intervals used in DR screening. These are illustrative
+# defaults for a prototype, NOT clinical guidance.
+SUGGESTED_INTERVAL_MONTHS = {0: 12, 1: 12, 2: 6, 3: 3, 4: 1}
+
+
+# ---------------------------------------------------------------------------
+def _to_datetime(series: Sequence[Any]) -> pd.Series:
+    return pd.to_datetime(pd.Series(list(series)), errors="coerce")
+
+
+def analyse_progression(visits: pd.DataFrame) -> Dict[str, Any]:
+    """Summarise one patient's visit history.
+
+    ``visits`` needs ``visit_date`` and ``predicted_stage`` columns, and is
+    expected oldest-first (which is what ``dao.get_visits`` returns).
+    """
+    result: Dict[str, Any] = {
+        "n_visits": 0, "trend": TREND_INSUFFICIENT, "first_stage": None,
+        "latest_stage": None, "stage_change": None, "slope_per_year": None,
+        "max_stage": None, "days_observed": None, "first_date": None,
+        "latest_date": None, "any_simulated": False, "mean_confidence": None,
+    }
+
+    if visits is None or visits.empty:
+        return result
+
+    df = visits.copy()
+    df["_date"] = _to_datetime(df["visit_date"])
+    df = df.dropna(subset=["_date"]).sort_values("_date").reset_index(drop=True)
+    if df.empty:
+        return result
+
+    stages = df["predicted_stage"].astype(int).to_numpy()
+
+    result.update(
+        n_visits=len(df),
+        first_stage=int(stages[0]),
+        latest_stage=int(stages[-1]),
+        max_stage=int(stages.max()),
+        first_date=df["_date"].iloc[0].strftime("%Y-%m-%d"),
+        latest_date=df["_date"].iloc[-1].strftime("%Y-%m-%d"),
+        any_simulated=bool(df["is_simulated"].any()) if "is_simulated" in df else False,
+        mean_confidence=round(float(df["confidence"].mean()), 4)
+        if "confidence" in df else None,
+    )
+
+    if len(df) < 2:
+        # One visit is a baseline, not a trajectory. Saying "stable" here would
+        # be a claim the data cannot support.
+        result["trend"] = TREND_INSUFFICIENT
+        return result
+
+    change = int(stages[-1] - stages[0])
+    result["stage_change"] = change
+    result["trend"] = (TREND_WORSENING if change > 0
+                       else TREND_IMPROVING if change < 0 else TREND_STABLE)
+
+    days = (df["_date"].iloc[-1] - df["_date"].iloc[0]).days
+    result["days_observed"] = int(days)
+
+    if days > 0:
+        years = np.array([(d - df["_date"].iloc[0]).days / 365.25 for d in df["_date"]])
+        # Least-squares slope over all visits, not just the endpoints.
+        slope = float(np.polyfit(years, stages.astype(float), 1)[0])
+        result["slope_per_year"] = round(slope, 4)
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+def next_review_suggestion(latest_stage: int, trend: str) -> Dict[str, Any]:
+    """Illustrative follow-up interval. NOT clinical advice.
+
+    Included to demonstrate what a screening-support tool would surface. The
+    returned dict carries its own disclaimer so the UI cannot show the number
+    without the caveat.
+    """
+    months = SUGGESTED_INTERVAL_MONTHS.get(int(latest_stage), 12)
+    if trend == TREND_WORSENING:
+        months = max(1, months // 2)      # progression -> look again sooner
+
+    return {
+        "months": months,
+        "approx_date": (date.today() + timedelta(days=int(months * 30.44))).isoformat(),
+        "disclaimer": (
+            "Illustrative interval generated by an academic prototype. Not clinical "
+            "advice. Follow-up must be decided by a qualified ophthalmologist."
+        ),
+    }
+
+
+def progression_summary_text(analysis: Dict[str, Any], class_names: Sequence[str]) -> str:
+    """One-paragraph plain-English summary for the app and the PDF report."""
+    if analysis["n_visits"] == 0:
+        return "No visits recorded for this patient."
+    if analysis["n_visits"] == 1:
+        return (f"Single visit on {analysis['first_date']}, graded "
+                f"{analysis['latest_stage']} ({class_names[analysis['latest_stage']]}). "
+                "At least two visits are needed to assess progression.")
+
+    first = class_names[analysis["first_stage"]]
+    latest = class_names[analysis["latest_stage"]]
+    months = (analysis["days_observed"] or 0) / 30.44
+
+    text = (f"{analysis['n_visits']} visits between {analysis['first_date']} and "
+            f"{analysis['latest_date']} ({months:.1f} months). ")
+
+    if analysis["trend"] == TREND_STABLE:
+        text += f"Predicted severity remained at {analysis['latest_stage']} ({latest}). "
+    else:
+        direction = "increased" if analysis["trend"] == TREND_WORSENING else "decreased"
+        text += (f"Predicted severity {direction} from {analysis['first_stage']} ({first}) "
+                 f"to {analysis['latest_stage']} ({latest}). ")
+
+    if analysis.get("slope_per_year") is not None:
+        text += f"Fitted trend: {analysis['slope_per_year']:+.2f} stages per year. "
+
+    if analysis.get("any_simulated"):
+        text += "NOTE: this history includes SIMULATED visits for demonstration. "
+
+    return text
+
+
+# ---------------------------------------------------------------------------
+# Simulated histories
+# ---------------------------------------------------------------------------
+def simulate_visit_history(
+    patient_id: str,
+    n_visits: int = 4,
+    start_stage: int = 1,
+    pattern: str = "worsening",
+    months_between: int = 6,
+    start_date: Optional[date] = None,
+    seed: int = 42,
+) -> List[Dict[str, Any]]:
+    """Generate a CLEARLY-LABELLED synthetic visit history.
+
+    Used only because APTOS has no longitudinal data. Every row returned has
+    ``is_simulated=True``, which the database stores, the UI displays and the
+    report discloses.
+
+    ``pattern`` is one of ``worsening`` / ``improving`` / ``stable`` / ``fluctuating``.
+    Confidence is drawn to be lower for middle grades, mimicking the real
+    behaviour observed in Milestone 6 (Mild and Severe are the hardest classes).
+    """
+    if pattern not in {"worsening", "improving", "stable", "fluctuating"}:
+        raise ValueError(f"unknown pattern: {pattern}")
+    if n_visits < 1:
+        raise ValueError("n_visits must be at least 1")
+
+    rng = np.random.default_rng(seed)
+    start_date = start_date or (date.today() - timedelta(days=30 * months_between * n_visits))
+
+    stage = int(np.clip(start_stage, 0, 4))
+    records: List[Dict[str, Any]] = []
+
+    for i in range(n_visits):
+        if i > 0:
+            if pattern == "worsening":
+                stage += int(rng.random() < 0.7)                 # usually up one
+            elif pattern == "improving":
+                stage -= int(rng.random() < 0.6)
+            elif pattern == "fluctuating":
+                stage += int(rng.choice([-1, 0, 1], p=[0.3, 0.4, 0.3]))
+            # "stable" leaves it alone
+            stage = int(np.clip(stage, 0, 4))
+
+        visit_date = start_date + timedelta(days=int(30.44 * months_between * i))
+
+        # Middle grades are genuinely harder, so give them lower confidence.
+        base = 0.92 if stage in (0, 4) else 0.74
+        confidence = float(np.clip(base + rng.normal(0, 0.06), 0.35, 0.99))
+
+        probabilities = rng.random(5) * 0.12
+        probabilities[stage] = confidence
+        probabilities = probabilities / probabilities.sum()
+
+        records.append({
+            "patient_id": patient_id,
+            "visit_date": visit_date.isoformat(),
+            "predicted_stage": stage,
+            "confidence": round(float(probabilities[stage]), 4),
+            "probabilities": [round(float(p), 4) for p in probabilities],
+            "is_simulated": True,
+            "notes": f"SIMULATED visit {i+1}/{n_visits} (pattern: {pattern}) - "
+                     "synthetic data for demonstration only",
+        })
+
+    return records
+
+
+# ---------------------------------------------------------------------------
+# Charts
+# ---------------------------------------------------------------------------
+def progression_figure(
+    visits: pd.DataFrame,
+    class_names: Sequence[str],
+    patient_id: str = "",
+):
+    """Matplotlib step chart of severity over time. Returns the Figure."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    df = visits.copy()
+    df["_date"] = _to_datetime(df["visit_date"])
+    df = df.dropna(subset=["_date"]).sort_values("_date")
+
+    fig, ax = plt.subplots(figsize=(9, 4.4))
+
+    simulated = df["is_simulated"].astype(bool) if "is_simulated" in df else pd.Series(
+        [False] * len(df), index=df.index)
+
+    ax.step(df["_date"], df["predicted_stage"], where="post",
+            color="#4C72B0", linewidth=2, zorder=2)
+    ax.scatter(df.loc[~simulated, "_date"], df.loc[~simulated, "predicted_stage"],
+               s=90, color="#4C72B0", edgecolor="black", zorder=3, label="recorded")
+    if simulated.any():
+        ax.scatter(df.loc[simulated, "_date"], df.loc[simulated, "predicted_stage"],
+                   s=90, marker="s", color="#DD8452", edgecolor="black",
+                   zorder=3, label="SIMULATED")
+
+    for _, row in df.iterrows():
+        ax.annotate(f"{row['confidence']:.0%}",
+                    xy=(row["_date"], row["predicted_stage"]),
+                    xytext=(0, 12), textcoords="offset points",
+                    ha="center", fontsize=7, color="#444")
+
+    ax.set_yticks(range(len(class_names)))
+    ax.set_yticklabels([f"{i}: {n}" for i, n in enumerate(class_names)], fontsize=8)
+    ax.set_ylim(-0.4, len(class_names) - 0.6)
+    ax.set_xlabel("Visit date")
+    ax.set_ylabel("Predicted severity stage")
+    title = f"Severity progression{f' - patient {patient_id}' if patient_id else ''}"
+    if simulated.any():
+        title += "   [CONTAINS SIMULATED DATA]"
+    ax.set_title(title, fontsize=11)
+    ax.grid(alpha=0.25, linestyle=":")
+    ax.legend(fontsize=8, loc="upper left")
+    ax.spines[["top", "right"]].set_visible(False)
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    return fig

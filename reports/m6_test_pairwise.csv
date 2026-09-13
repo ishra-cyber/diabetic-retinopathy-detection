@@ -1,0 +1,4 @@
+model_a,model_b,difference,ci_low,ci_high,prob_a_better,distinguishable
+densenet121,efficientnet_b3,0.0327,0.004,0.0647,0.991,True
+densenet121,resnet50,0.0137,-0.0118,0.0398,0.846,False
+efficientnet_b3,resnet50,-0.019,-0.0492,0.0096,0.096,False

@@ -1,0 +1,94 @@
+<#
+.SYNOPSIS
+    Train all three architectures back to back. Intended for an overnight run.
+    File location: <project_root>\scripts\run_all.ps1
+
+.DESCRIPTION
+    Runs the smoke test on each architecture first (fast), and only starts the
+    real training if all three pass. That ordering matters: you do not want to
+    discover at 3am that DenseNet121 runs out of memory.
+
+    Each run writes to experiments\<run_name>\ and keeps its own train.log, so
+    a failure in run 2 does not cost you run 1.
+
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File .\scripts\run_all.ps1
+
+.EXAMPLE
+    # skip the smoke tests (only if you have already run them)
+    powershell -ExecutionPolicy Bypass -File .\scripts\run_all.ps1 -SkipSmoke
+#>
+
+param(
+    [switch]$SkipSmoke,
+    [string[]]$Experiments = @("resnet50", "efficientnet_b3", "densenet121")
+)
+
+$ErrorActionPreference = "Continue"
+$ProjectRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Definition)
+Set-Location $ProjectRoot
+$env:PYTHONPATH = $ProjectRoot
+
+$Py = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+if (-not (Test-Path $Py)) { $Py = "python" }
+
+function Banner($text) {
+    Write-Host ""
+    Write-Host ("=" * 70) -ForegroundColor Cyan
+    Write-Host "  $text" -ForegroundColor Cyan
+    Write-Host ("=" * 70) -ForegroundColor Cyan
+}
+
+$started = Get-Date
+Banner "DR project - training $($Experiments.Count) architecture(s)"
+Write-Host "Started : $started"
+Write-Host "Python  : $Py"
+
+# ---- Phase 1: smoke tests -------------------------------------------------
+if (-not $SkipSmoke) {
+    Banner "PHASE 1 - smoke tests (2 epochs, 64 images each)"
+    $smokeFailed = @()
+    foreach ($exp in $Experiments) {
+        Write-Host "`n--- smoke: $exp ---" -ForegroundColor Yellow
+        & $Py -m scripts.m4_train --experiment $exp --smoke
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "SMOKE TEST FAILED for $exp (exit $LASTEXITCODE)" -ForegroundColor Red
+            $smokeFailed += $exp
+        }
+    }
+    if ($smokeFailed.Count -gt 0) {
+        Banner "ABORTING - smoke tests failed: $($smokeFailed -join ', ')"
+        Write-Host "Fix these before starting the real runs. Exit code 2 means CUDA"
+        Write-Host "out of memory - lower batch_size in that experiment's yaml."
+        exit 1
+    }
+    Write-Host "`nAll smoke tests passed." -ForegroundColor Green
+}
+
+# ---- Phase 2: real training ----------------------------------------------
+Banner "PHASE 2 - full training runs"
+$results = @()
+foreach ($exp in $Experiments) {
+    $runStart = Get-Date
+    Write-Host "`n--- training: $exp  (started $runStart) ---" -ForegroundColor Yellow
+    & $Py -m scripts.m4_train --experiment $exp
+    $code = $LASTEXITCODE
+    $mins = [math]::Round(((Get-Date) - $runStart).TotalMinutes, 1)
+    $results += [pscustomobject]@{ Experiment = $exp; ExitCode = $code; Minutes = $mins }
+    if ($code -eq 0) {
+        Write-Host "$exp finished OK in $mins min" -ForegroundColor Green
+    } else {
+        Write-Host "$exp FAILED (exit $code) after $mins min - continuing with the next one" -ForegroundColor Red
+    }
+}
+
+# ---- Summary --------------------------------------------------------------
+Banner "SUMMARY"
+$results | Format-Table -AutoSize
+$totalMins = [math]::Round(((Get-Date) - $started).TotalMinutes, 1)
+Write-Host "Total wall time: $totalMins min"
+Write-Host ""
+Write-Host "Next: python -m scripts.m6_evaluate   (Milestone 6)"
+
+$failed = ($results | Where-Object { $_.ExitCode -ne 0 }).Count
+if ($failed -gt 0) { exit 1 } else { exit 0 }

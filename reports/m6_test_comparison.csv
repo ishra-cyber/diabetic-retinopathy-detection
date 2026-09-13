@@ -1,0 +1,4 @@
+backbone,run,QWK,accuracy,balanced_acc,F1_macro,AUC_macro,best_epoch,recall_0,recall_1,recall_2,recall_3,recall_4
+densenet121,densenet121_weighted,0.891,0.7964,0.637,0.6412,0.9311,8,0.9705,0.5179,0.7267,0.3793,0.5909
+resnet50,resnet50_weighted,0.8773,0.7964,0.6017,0.6142,0.9324,12,0.9742,0.4643,0.7933,0.3448,0.4318
+efficientnet_b3,effnetb3_weighted,0.8583,0.78,0.6428,0.6201,0.9211,3,0.9705,0.5536,0.66,0.6207,0.4091

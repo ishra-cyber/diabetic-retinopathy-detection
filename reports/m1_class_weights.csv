@@ -1,0 +1,6 @@
+label,class_name,count,weight
+0,No DR,1805,0.2159
+1,Mild,370,1.0534
+2,Moderate,999,0.3901
+3,Severe,193,2.0194
+4,Proliferative DR,295,1.3212

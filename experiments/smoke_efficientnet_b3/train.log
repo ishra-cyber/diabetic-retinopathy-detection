@@ -1,0 +1,47 @@
+00:45:27 | INFO    | train.smoke_efficientnet_b3 | ====================================================================
+00:45:27 | INFO    | train.smoke_efficientnet_b3 |   RUN: smoke_efficientnet_b3
+00:45:27 | INFO    | train.smoke_efficientnet_b3 | ====================================================================
+00:45:27 | INFO    | train.smoke_efficientnet_b3 | Device: NVIDIA GeForce RTX 3050 6GB Laptop GPU (6.4 GB VRAM)
+00:45:27 | INFO    | train.smoke_efficientnet_b3 | Mixed precision (AMP): True
+00:45:27 | WARNING | train.smoke_efficientnet_b3 | SMOKE TEST: limited to 64 train / 32 val samples. Results are meaningless - this only checks the code runs.
+00:45:27 | INFO    | train.smoke_efficientnet_b3 | Train: 64 images (64 from cache) | Val: 32 images (32 from cache)
+00:45:27 | INFO    | train.smoke_efficientnet_b3 | Train class counts: [26, 8, 20, 4, 6]
+00:45:27 | INFO    | train.smoke_efficientnet_b3 | Split fingerprint: 415bcc1c575a
+00:45:29 | INFO    | train.smoke_efficientnet_b3 | Model:
+  backbone   : efficientnet_b3
+  parameters : 10,703,917 total | 10,703,917 trainable
+  note       : Compound depth/width/resolution scaling (~12M params)
+00:45:30 | INFO    | train.smoke_efficientnet_b3 | Forward check passed: output shape (2, 5)
+00:45:30 | INFO    | train.smoke_efficientnet_b3 | Weighted cross-entropy, weights from the TRAIN split:
+00:45:30 | INFO    | train.smoke_efficientnet_b3 |     No DR              0.3052
+00:45:30 | INFO    | train.smoke_efficientnet_b3 |     Mild               0.9919
+00:45:30 | INFO    | train.smoke_efficientnet_b3 |     Moderate           0.3967
+00:45:30 | INFO    | train.smoke_efficientnet_b3 |     Severe             1.9837
+00:45:30 | INFO    | train.smoke_efficientnet_b3 |     Proliferative DR   1.3225
+00:45:30 | INFO    | train.smoke_efficientnet_b3 | Epochs 2 | batch 8 x accum 2 = effective 16 | 4 optimiser steps/epoch
+00:45:30 | INFO    | train.smoke_efficientnet_b3 | --------------------------------------------------------------------
+00:45:30 | INFO    | train.smoke_efficientnet_b3 | Epoch 1/2
+00:45:45 | INFO    | train.smoke_efficientnet_b3 | train_loss 2.9701 | val_loss 2.4212 | val_QWK -0.0290 | val_acc 0.2188 | 16s (ETA 0 min)
+00:45:45 | INFO    | train.smoke_efficientnet_b3 |   new best val_qwk = -0.0290 (+-0.0290) - saving best.pt
+00:45:45 | INFO    | train.smoke_efficientnet_b3 | --------------------------------------------------------------------
+00:45:45 | INFO    | train.smoke_efficientnet_b3 | Epoch 2/2
+00:45:46 | INFO    | train.smoke_efficientnet_b3 | train_loss 2.4339 | val_loss 2.8020 | val_QWK 0.3641 | val_acc 0.3438 | 1s (ETA 0 min)
+00:45:46 | INFO    | train.smoke_efficientnet_b3 |   new best val_qwk = 0.3641 (+0.3931) - saving best.pt
+00:45:46 | INFO    | train.smoke_efficientnet_b3 | ====================================================================
+00:45:46 | INFO    | train.smoke_efficientnet_b3 | Finished smoke_efficientnet_b3 in 0.3 min (2 epochs, mean 8s/epoch)
+00:45:46 | INFO    | train.smoke_efficientnet_b3 | Best val_qwk = 0.3641 at epoch 2
+00:45:46 | INFO    | train.smoke_efficientnet_b3 | Validation metrics at the best epoch:
+  samples            : 32
+  QWK                : 0.3641   <-- headline metric
+  accuracy           : 0.3438
+  balanced accuracy  : 0.1659
+  macro F1           : 0.2111
+  macro ROC-AUC      : 0.4999
+  per-class recall   :
+      0 No DR              recall 0.375  (n=16)
+      1 Mild               recall 0.000  (n=1)
+      2 Moderate           recall 0.455  (n=11)
+      3 Severe             recall 0.000  (n=1)
+      4 Proliferative DR   recall 0.000  (n=3)
+00:45:46 | INFO    | train.smoke_efficientnet_b3 | Artefacts in: C:\Users\ishra\Downloads\dr_project\dr_project\experiments\smoke_efficientnet_b3
+00:45:46 | INFO    | train.smoke_efficientnet_b3 | ====================================================================

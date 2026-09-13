@@ -1,0 +1,30 @@
+# Data (never commit the dataset - it is ~10 GB and licensed by Kaggle)
+data/raw/**
+data/interim/**
+data/processed/**
+!data/**/.gitkeep
+
+# Splits are small and reproducible; keep them for the report
+!data/splits/*.csv
+
+# Experiments: keep metrics, drop weights
+experiments/**/*.pt
+experiments/**/*.pth
+
+# App runtime artefacts
+app/assets/uploads/**
+app/assets/gradcam/**
+app/assets/*.sqlite3
+!app/assets/.gitkeep
+
+# Credentials - NEVER commit
+kaggle.json
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/

@@ -1,0 +1,17 @@
+# Experiment: DenseNet121 (dense connectivity, the smallest model)
+#
+# Run:  python -m scripts.m4_train --experiment densenet121
+#
+# DenseNet concatenates feature maps, so its ACTIVATION memory is much larger
+# than its 8M parameter count suggests. If this run hits CUDA out-of-memory,
+# drop batch_size to 4 and raise grad_accum_steps to 4 - the effective batch
+# and the resulting model are unchanged, it is just slower.
+
+run_name: "densenet121_weighted"
+
+training:
+  backbone: "densenet121"
+  batch_size: 6
+  grad_accum_steps: 3          # effective batch 18, close enough to 16
+  lr: 3.0e-4
+  imbalance_strategy: "weighted_loss"

@@ -1,0 +1,14 @@
+{
+  // Open this file in VS Code (File > Open Workspace from File...) if you
+  // prefer a workspace over a plain folder. Opening the folder works too.
+  "folders": [{ "path": "." }],
+  "settings": {
+    "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "python.analysis.extraPaths": ["${workspaceFolder}"],
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["tests"]
+  },
+  "extensions": {
+    "recommendations": ["ms-python.python", "ms-python.vscode-pylance", "ms-toolsai.jupyter"]
+  }
+}

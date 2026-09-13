@@ -1,0 +1,16 @@
+# ============================================================================
+# OPTIONAL extras. The project runs fine WITHOUT these.
+# Install only if you want them:   pip install -r requirements-optional.txt
+#
+# On Windows these may need the "Microsoft C++ Build Tools" (a ~6 GB install).
+# If pip fails with "Microsoft Visual C++ 14.0 or greater is required", skip
+# this file - nothing in the project depends on it.
+# ============================================================================
+
+# Albumentations: an alternative augmentation library. Popular in published DR
+# papers, so you may want it for the literature-comparison section of the report.
+# Pulls in albucore -> stringzilla, which is the usual source of build failures.
+albumentations>=1.4.0
+
+# Ruff: fast linter. Pure Python wheels, installs cleanly everywhere.
+ruff>=0.5.0

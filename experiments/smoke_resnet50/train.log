@@ -1,0 +1,47 @@
+00:45:02 | INFO    | train.smoke_resnet50 | ====================================================================
+00:45:02 | INFO    | train.smoke_resnet50 |   RUN: smoke_resnet50
+00:45:02 | INFO    | train.smoke_resnet50 | ====================================================================
+00:45:02 | INFO    | train.smoke_resnet50 | Device: NVIDIA GeForce RTX 3050 6GB Laptop GPU (6.4 GB VRAM)
+00:45:02 | INFO    | train.smoke_resnet50 | Mixed precision (AMP): True
+00:45:02 | WARNING | train.smoke_resnet50 | SMOKE TEST: limited to 64 train / 32 val samples. Results are meaningless - this only checks the code runs.
+00:45:02 | INFO    | train.smoke_resnet50 | Train: 64 images (64 from cache) | Val: 32 images (32 from cache)
+00:45:02 | INFO    | train.smoke_resnet50 | Train class counts: [26, 8, 20, 4, 6]
+00:45:03 | INFO    | train.smoke_resnet50 | Split fingerprint: 415bcc1c575a
+00:45:05 | INFO    | train.smoke_resnet50 | Model:
+  backbone   : resnet50
+  parameters : 23,518,277 total | 23,518,277 trainable
+  note       : Residual connections; the standard CNN baseline (~25.6M params)
+00:45:05 | INFO    | train.smoke_resnet50 | Forward check passed: output shape (2, 5)
+00:45:05 | INFO    | train.smoke_resnet50 | Weighted cross-entropy, weights from the TRAIN split:
+00:45:05 | INFO    | train.smoke_resnet50 |     No DR              0.3052
+00:45:05 | INFO    | train.smoke_resnet50 |     Mild               0.9919
+00:45:05 | INFO    | train.smoke_resnet50 |     Moderate           0.3967
+00:45:05 | INFO    | train.smoke_resnet50 |     Severe             1.9837
+00:45:05 | INFO    | train.smoke_resnet50 |     Proliferative DR   1.3225
+00:45:05 | INFO    | train.smoke_resnet50 | Epochs 2 | batch 8 x accum 2 = effective 16 | 4 optimiser steps/epoch
+00:45:05 | INFO    | train.smoke_resnet50 | --------------------------------------------------------------------
+00:45:05 | INFO    | train.smoke_resnet50 | Epoch 1/2
+00:45:17 | INFO    | train.smoke_resnet50 | train_loss 1.6064 | val_loss 1.6082 | val_QWK 0.0282 | val_acc 0.2500 | 12s (ETA 0 min)
+00:45:17 | INFO    | train.smoke_resnet50 |   new best val_qwk = 0.0282 (+0.0282) - saving best.pt
+00:45:17 | INFO    | train.smoke_resnet50 | --------------------------------------------------------------------
+00:45:17 | INFO    | train.smoke_resnet50 | Epoch 2/2
+00:45:18 | INFO    | train.smoke_resnet50 | train_loss 1.6056 | val_loss 1.5940 | val_QWK 0.0202 | val_acc 0.3125 | 1s (ETA 0 min)
+00:45:18 | INFO    | train.smoke_resnet50 |   no improvement (1/5) - best val_qwk 0.0282 at epoch 1
+00:45:18 | INFO    | train.smoke_resnet50 | ====================================================================
+00:45:18 | INFO    | train.smoke_resnet50 | Finished smoke_resnet50 in 0.2 min (2 epochs, mean 6s/epoch)
+00:45:18 | INFO    | train.smoke_resnet50 | Best val_qwk = 0.0282 at epoch 1
+00:45:18 | INFO    | train.smoke_resnet50 | Validation metrics at the best epoch:
+  samples            : 32
+  QWK                : 0.0282   <-- headline metric
+  accuracy           : 0.2500
+  balanced accuracy  : 0.1455
+  macro F1           : 0.0821
+  macro ROC-AUC      : 0.4394
+  per-class recall   :
+      0 No DR              recall 0.000  (n=16)
+      1 Mild               recall 0.000  (n=1)
+      2 Moderate           recall 0.727  (n=11)
+      3 Severe             recall 0.000  (n=1)
+      4 Proliferative DR   recall 0.000  (n=3)
+00:45:18 | INFO    | train.smoke_resnet50 | Artefacts in: C:\Users\ishra\Downloads\dr_project\dr_project\experiments\smoke_resnet50
+00:45:18 | INFO    | train.smoke_resnet50 | ====================================================================
