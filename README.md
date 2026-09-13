@@ -1,287 +1,377 @@
 # Intelligent Diabetic Retinopathy Detection and Progress Monitoring Using AI/ML
 
-An explainable deep-learning web application that grades retinal fundus images into the
-five international diabetic retinopathy (DR) severity stages, produces Grad-CAM
-heatmaps for every prediction, stores per-patient visit records, and visualises how a
-patient's severity changes across visits.
+An explainable deep-learning system that grades retinal fundus photographs into the five
+international diabetic retinopathy severity stages, produces a Grad-CAM heatmap for every
+prediction, stores per-patient visit records, and visualises how predicted severity changes
+across visits.
+
+Three CNN architectures are trained under identical conditions and compared with bootstrap
+confidence intervals.
+
+---
 
 > ## ⚠️ Academic prototype — not a medical device
-> This is a final-year student research project built for **screening-support
-> demonstration only**. It has not been clinically validated, is not registered with any
-> regulatory authority, and must **not** be used for diagnosis, triage, or treatment
-> decisions. It does not replace examination by a qualified ophthalmologist.
+>
+> This is a final-year student research project built for **screening-support demonstration
+> only**. It has not been clinically validated, is not registered with any regulatory
+> authority, and must **not** be used for diagnosis, triage, or treatment decisions. It does
+> not replace examination by a qualified ophthalmologist.
+>
+> Multi-visit patient histories in this repository are **simulated**. See
+> [Limitations](#limitations).
 
 ---
 
-## 1. Severity classes
+## Contents
 
-| Label | Stage |
-|------:|-------|
-| 0 | No DR |
-| 1 | Mild |
-| 2 | Moderate |
-| 3 | Severe |
-| 4 | Proliferative DR |
-
-## 2. Dataset
-
-**APTOS 2019 Blindness Detection** (Kaggle) — 3,662 labelled training fundus images
-captured with fundus photography in rural India. Images vary widely in resolution,
-illumination, and framing, which is why border cropping and normalisation matter.
-
-The dataset is **not** included in this repository. You download it yourself with your
-own Kaggle account (see setup below); Kaggle competition rules must be accepted first.
+- [Results](#results)
+- [What the system does](#what-the-system-does)
+- [Dataset](#dataset)
+- [Method](#method)
+- [Reproducing this work](#reproducing-this-work)
+- [Repository structure](#repository-structure)
+- [What is deliberately not in this repository](#what-is-deliberately-not-in-this-repository)
+- [Limitations](#limitations)
+- [References](#references)
 
 ---
 
-## 3. Setup (local machine with NVIDIA GPU)
+## Results
 
-### 3.1 Create and activate a virtual environment
+Held-out test split (n = 550 images), evaluated **once** after all model selection was
+complete. Confidence intervals are 95% percentile bootstrap over 1,000 resamples.
 
-```bash
-# Linux / macOS
-python3 -m venv .venv
-source .venv/bin/activate
+| Architecture | Parameters | Test QWK | 95% CI |
+|---|---:|---:|---|
+| **DenseNet121** | 6.96 M | **0.8910** | [0.865, 0.916] |
+| ResNet50 | 23.52 M | 0.8773 | [0.847, 0.904] |
+| EfficientNet-B3 | 10.70 M | 0.8583 | [0.824, 0.888] |
 
-# Windows (PowerShell)
+Validation QWK during model selection: DenseNet121 0.8992, ResNet50 0.8949,
+EfficientNet-B3 0.8938.
+
+**Quadratic Weighted Kappa (QWK) is the primary metric**, not accuracy. Diabetic retinopathy
+grading is *ordinal*: predicting stage 4 when the truth is stage 0 is a far worse error than
+predicting stage 1. QWK penalises errors by the square of their distance. It is also the
+official APTOS 2019 competition metric, making these numbers comparable to published work.
+
+The argument in one sentence: *a degenerate classifier predicting "No DR" for every image
+scores roughly 49% accuracy on this dataset and a QWK of 0.*
+
+### On the architecture comparison
+
+All three models were trained on identical data (same stratified split, verified by a shared
+split fingerprint), identical preprocessing, identical augmentation, identical weighted
+cross-entropy loss and identical optimisation schedule. The only variable was the
+architecture.
+
+The spread across architectures is smaller than the width of a single confidence interval.
+Paired bootstrap comparisons should be consulted before claiming any architecture is
+superior — see `reports/m6_test_pairwise.csv`.
+
+Worth noting: **DenseNet121 achieved the highest QWK with under a third of ResNet50's
+parameters**, which suggests that on a dataset of this size the limiting factor is training
+data volume rather than model capacity.
+
+---
+
+## What the system does
+
+```
+┌──────────────────────── PRESENTATION ────────────────────────┐
+│  Streamlit app                                               │
+│   Screen · Patient history · Database · About                │
+└──────────▲──────────────────────────────────▲────────────────┘
+     inference request                  history queries
+           │                                  │
+┌──────────┴──────────── APPLICATION ─────────┴────────────────┐
+│  Inference + Grad-CAM         Progression analysis            │
+│  Data-access layer ──────── SQLite (patients, visits)         │
+└──────────▲───────────────────────────────────────────────────┘
+           │
+┌──────────┴─────────────── MODEL ─────────────────────────────┐
+│  APTOS 2019 → preprocess → stratified split → CNN            │
+│  → weighted cross-entropy → checkpoint + metrics             │
+└──────────────────────────────────────────────────────────────┘
+```
+
+| Capability | Detail |
+|---|---|
+| Severity grading | 5 classes: No DR, Mild, Moderate, Severe, Proliferative DR |
+| Explainability | Grad-CAM on the final convolutional layer, with border-attention diagnostics |
+| Visit records | SQLite: patient ID, date, predicted stage, confidence, full probability vector, image and heatmap paths, model version |
+| Progression | Trend classification (improving / stable / worsening), least-squares slope in stages per year, step chart |
+| Reporting | Downloadable per-patient PDF, disclaimer first |
+
+---
+
+## Dataset
+
+**APTOS 2019 Blindness Detection** — 3,662 labelled fundus photographs captured in rural
+India across several camera models.
+
+| Stage | Class | Images | Share |
+|---:|---|---:|---:|
+| 0 | No DR | 1,805 | 49.3% |
+| 1 | Mild | 370 | 10.1% |
+| 2 | Moderate | 999 | 27.3% |
+| 3 | Severe | 193 | 5.3% |
+| 4 | Proliferative DR | 295 | 8.1% |
+
+Class imbalance ratio **9.4 : 1**. Image dimensions span 640×480 to 4288×2848.
+
+The dataset is **not** included here — see
+[What is deliberately not in this repository](#what-is-deliberately-not-in-this-repository).
+
+---
+
+## Method
+
+### Preprocessing
+
+```
+read → crop black borders → pad to square → [optional CLAHE] → resize 300×300
+```
+
+Cropping removes on average 7.7% of pixels (mean black area falls from 21.4% to 15.4%).
+Its value is **not** bulk pixel reduction but *normalisation*: the amount of black surround
+varies between images, so resizing alone would leave the retina occupying a different
+fraction of each input, presenting identical lesions at different scales.
+
+Padding to square before resizing preserves aspect ratio, so a circular optic disc does not
+become an ellipse.
+
+Preprocessed images are cached once to `data/interim/train_300/`. The same
+`preprocess_from_config()` runs in training and in the app, so inference cannot drift from
+what evaluation measured.
+
+### Augmentation
+
+Geometry is generous, colour is deliberately conservative:
+
+| | |
+|---|---|
+| Horizontal / vertical flip | p = 0.5 each |
+| Rotation | ±15° |
+| Scale | 0.90–1.00 |
+| Brightness / contrast / saturation | 0.15 / 0.15 / 0.10 |
+| **Hue** | **0.0 — unchanged** |
+
+A fundus photograph has no canonical orientation (cameras rotate; left and right eyes are
+mirror images), so flips and rotation are free label-preserving variety. Colour is different:
+haemorrhages are dark red and exudates pale yellow, so lesion identity is partly *in* the
+colour. Shifting hue would corrupt the label while leaving the image looking plausible.
+
+### Split
+
+Stratified 70 / 15 / 15 (2,562 / 550 / 550), seed 42, written to `data/splits/` and
+committed. Every run reads those CSVs and records a **split fingerprint**, so two runs can be
+proven to have trained on identical data before their scores are compared.
+
+### Training
+
+| | |
+|---|---|
+| Transfer learning | ImageNet-pretrained backbones via `timm`, head replaced with `Linear(→5)` |
+| Loss | Weighted cross-entropy, weights from inverse class frequency **on the train split only** |
+| Optimiser | AdamW, cosine schedule with 1 epoch linear warmup |
+| Epochs | 20, early stopping on validation QWK (patience 5) |
+| Precision | Mixed (AMP) |
+| Effective batch | 16 (gradient accumulation) |
+| Hardware | NVIDIA RTX 3050 6 GB Laptop GPU, CUDA 12.1 |
+
+Class weights are computed from the training split alone; using whole-dataset counts would
+leak test-set label statistics into training.
+
+---
+
+## Reproducing this work
+
+### 1. Environment
+
+```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-
 python -m pip install --upgrade pip
-```
 
-### 3.2 Install PyTorch with CUDA **first**
-
-Check your driver, then pick the matching wheel index:
-
-```bash
-nvidia-smi          # note the "CUDA Version" in the top-right corner
-```
-
-```bash
-# CUDA 12.1 builds (works with driver >= 530; the usual choice)
+# PyTorch first, with the CUDA build matching your driver
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-
-# CUDA 11.8 builds (older drivers)
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-```
-
-Verify the GPU is actually visible to PyTorch — do this before you train anything:
-
-```bash
-python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU only')"
-```
-
-### 3.3 Install the rest
-
-```bash
 pip install -r requirements.txt
 ```
 
-### 3.4 Configure Kaggle credentials
-
-1. Open <https://www.kaggle.com/competitions/aptos2019-blindness-detection> and click
-   **Join Competition** (accept the rules). *Skipping this causes a 403 error.*
-2. Kaggle → Account → **Create New API Token** → downloads `kaggle.json`.
-
-```bash
-mkdir -p ~/.kaggle
-mv ~/Downloads/kaggle.json ~/.kaggle/
-chmod 600 ~/.kaggle/kaggle.json
-```
-
-Windows: place `kaggle.json` at `C:\Users\<you>\.kaggle\kaggle.json`.
-
----
-
-## 3A. Running the project in VS Code (Windows)
-
-### Step 1 — Open the folder
-
-`File → Open Folder…` → select **`dr_project`** itself (the folder containing
-`README.md`). Do **not** open its parent — `import src.utils.config` will fail if the
-workspace root is one level too high.
-
-VS Code will prompt *"This workspace has extension recommendations"* → click
-**Install All** (Python, Pylance, Jupyter, Ruff, Rainbow CSV, YAML).
-
-### Step 2 — One-command setup
-
-Open a terminal inside VS Code (`Ctrl+` \`) and run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1
-```
-
-That script creates `.venv`, auto-detects your CUDA version from `nvidia-smi`,
-installs the matching PyTorch wheels, installs `requirements.txt`, and runs the
-environment self-check. Options:
-
-```powershell
-.\setup.ps1 -Cuda cu118      # force an older CUDA build
-.\setup.ps1 -Cuda cpu        # no GPU / driver not ready yet
-.\setup.ps1 -Recreate        # rebuild .venv from scratch
-```
-
-You can also run it from the Command Palette:
-`Ctrl+Shift+P → Tasks: Run Task → Setup: create venv + install everything`.
-
-> **If PowerShell refuses to run the script**, that is Windows' execution policy,
-> not an error in the file. The `-ExecutionPolicy Bypass` above already handles it;
-> if you still get blocked, run the commands in §3.1–3.3 manually.
-
-### Step 3 — Select the interpreter
-
-`Ctrl+Shift+P → Python: Select Interpreter →` choose
-`.venv\Scripts\python.exe` (it is labelled *Recommended*).
-
-Check the bottom-right status bar shows `.venv` before running anything. This is the
-single most common cause of "but I installed it!" import errors.
-
-### Step 4 — Verify the environment
+Verify:
 
 ```powershell
 python -m scripts.check_env
 ```
 
-or press **F5** → **"M0: Check environment (GPU, packages, Kaggle)"**.
+Tested on Python 3.11.9, torch 2.5.1+cu121, Windows 11.
 
-You want `CUDA available to PyTorch → PASS` with your GPU name. If it says FAIL with
-`torch.cuda.is_available() is False`, you have the CPU-only wheel — re-run
-`.\setup.ps1 -Cuda cu121 -Recreate`.
+### 2. Dataset
 
-This also writes `reports/environment.txt`, which goes straight into your report's
-*Experimental setup* section.
+Accept the rules at
+[kaggle.com/competitions/aptos2019-blindness-detection](https://www.kaggle.com/competitions/aptos2019-blindness-detection),
+then either place `kaggle.json` at `~/.kaggle/kaggle.json` and run the download script, or
+download manually. Arrange as:
 
-### Step 5 — Run milestones with F5
+```
+data/raw/
+├── train.csv
+└── train_images/     3,662 .png files
+```
 
-`launch.json` ships with ready-made configurations:
+### 3. Pipeline
 
-| F5 configuration | Equivalent command |
-|---|---|
-| M0: Check environment | `python -m scripts.check_env` |
-| M1: Download APTOS dataset | `python -m scripts.m1_download_data` |
-| M1: Inspect dataset (sampled) | `python -m scripts.m1_inspect_dataset` |
-| M1: Inspect dataset (--scan-all) | `python -m scripts.m1_inspect_dataset --scan-all` |
-| Debug: current Python file | runs whatever file is open |
-| Streamlit app | `streamlit run app/app.py` *(from Milestone 10)* |
+```powershell
+python -m scripts.m1_inspect_dataset            # integrity checks, class distribution
+python -m scripts.m2_cache_images --workers 4   # cache 300×300 images
+python -m scripts.m3_split                      # stratified split (run once)
 
-Set a breakpoint by clicking left of a line number, then F5 — you can step through
-`src/data/inspect.py` line by line, which is worth doing once so you understand the
-integrity checks rather than just trusting them.
+python -m scripts.m4_train --experiment resnet50
+python -m scripts.m4_train --experiment efficientnet_b3
+python -m scripts.m4_train --experiment densenet121
 
-### Step 6 — Tests
+python -m scripts.m6_evaluate                   # test metrics + figures + bootstrap CIs
+python -m scripts.m7_gradcam                    # explainability figures
 
-The Testing beaker icon in the left sidebar discovers `tests/` automatically
-(pytest is pre-configured in `.vscode/settings.json`). Or `Ctrl+Shift+P → Tasks: Run
-Test Task`, or just:
+python -m scripts.m8_init_db --demo             # database + simulated histories
+python -m scripts.m9_progression                # progression charts
+streamlit run app/app.py                        # the application
+```
+
+Smoke-test before any long run:
+
+```powershell
+python -m scripts.m4_train --experiment densenet121 --smoke
+```
+
+### 4. Tests
 
 ```powershell
 pytest -q
 ```
 
-### VS Code troubleshooting
+73 tests covering dataset integrity checks, the preprocessing pipeline, split correctness and
+leakage detection, metrics, the database layer, and progression logic.
 
-| Symptom | Cause and fix |
+### Notebooks
+
+| Notebook | Milestones |
 |---|---|
-| `ModuleNotFoundError: No module named 'src'` | Wrong folder opened, or interpreter not `.venv`. Re-check Steps 1 and 3. |
-| Pylance underlines `src.utils.config` in yellow | Reload the window: `Ctrl+Shift+P → Developer: Reload Window`. |
-| `torch.cuda.is_available()` is False | CPU-only wheel installed. `.\setup.ps1 -Cuda cu121 -Recreate`. |
-| Terminal shows no `(.venv)` prefix | Close the terminal and open a new one after selecting the interpreter. |
-| `403 Forbidden` from Kaggle | You have not clicked **Join Competition** on the APTOS page. |
-| Anaconda base environment keeps activating | `Ctrl+Shift+P → Python: Select Interpreter` and pick `.venv` explicitly; the workspace setting already points there. |
-| Matplotlib window never appears | By design — figures are written to `reports/figures/`, not displayed. |
-| `Microsoft Visual C++ 14.0 or greater is required` / `Failed building wheel for stringzilla` | pip found no prebuilt wheel for your Python version and tried to compile C++. That package is `albumentations` → `albucore` → `stringzilla`, which this project does **not** need — it uses `torchvision.transforms.v2`. It now lives in `requirements-optional.txt`; just skip it. If you want it anyway, use Python 3.11 (which has wheels) or install the MS C++ Build Tools. |
-| Project is in `Downloads` | Move it to something like `C:\projects\dr_project`. Downloads gets cleaned by Windows Storage Sense, and you are about to put 10 GB of data in there. |
+| `01_dataset_inspection.ipynb` | Dataset acquisition and exploratory analysis |
+| `02_preprocessing.ipynb` | Preprocessing and augmentation |
+| `03_split_and_training.ipynb` | Split, model pre-flight, training curves |
+| `04_evaluation_and_gradcam.ipynb` | Test evaluation, bootstrap CIs, Grad-CAM |
 
+Notebooks import from `src/` rather than defining logic inline, so the code producing the
+report figures is the same code the application runs.
 
 ---
 
-## 3B. Prefer notebooks? Start here
-
-If you would rather work interactively than run scripts, see **`docs/QUICKSTART.md`** —
-manual venv setup, browser dataset download, and the notebook workflow, step by step.
-
-Milestone notebooks live in `notebooks/` and import their logic from `src/`, so the same
-code that produces your report figures is the code the Streamlit app uses later:
-
-| Notebook | Milestone |
-|---|---|
-| `01_dataset_inspection.ipynb` | 1 — acquisition and inspection |
-| `02_preprocessing.ipynb` | 2 — preprocessing and augmentation *(next)* |
-
----
-
-## 4. Running Milestone 1
-
-```bash
-# from the project root
-python -m scripts.m1_download_data        # downloads + extracts APTOS 2019
-python -m scripts.m1_inspect_dataset      # integrity checks, stats, figures
-```
-
-Outputs land in `reports/` and `reports/figures/`.
-
-Run the unit tests at any time:
-
-```bash
-pytest -q
-```
-
----
-
-## 5. Folder structure
+## Repository structure
 
 ```
-dr_project/
-├── configs/config.yaml          # single source of truth for paths + hyper-parameters
-├── data/
-│   ├── raw/aptos2019/           # Kaggle download (git-ignored)
-│   ├── interim/                 # cached preprocessed images
-│   └── splits/                  # train/val/test CSVs (seeded, committed)
+├── app/app.py                  Streamlit application
+├── configs/
+│   ├── config.yaml             all paths and hyper-parameters
+│   └── experiments/            one override file per architecture
+├── data/splits/                the exact train/val/test partition (committed)
+├── docs/                       architecture notes, quickstart, references
+├── experiments/<run>/          per run: metrics, history, config snapshot, logs
+├── notebooks/                  four milestone notebooks
+├── reports/
+│   ├── figures/                every figure, all generated
+│   └── *.csv, *.json           every results table
+├── scripts/                    one entry point per milestone step
 ├── src/
-│   ├── data/                    # inspection, preprocessing, dataset, splits
-│   ├── models/                  # backbone factory, train loop, evaluation
-│   ├── explain/                 # Grad-CAM
-│   ├── db/                      # SQLite schema + data-access layer
-│   ├── analysis/                # progression logic + charts
-│   └── utils/                   # config, seeding, logging
-├── scripts/                     # one runnable entry point per milestone step
-├── app/                         # Streamlit application + assets
-├── experiments/                 # checkpoints + metrics, one folder per run
-├── reports/                     # figures, tables, screenshots, report text
-├── tests/                       # pytest suite
-├── docs/                        # architecture notes, report sections
-├── .vscode/                     # launch.json, tasks.json, settings.json
-├── setup.ps1 / setup.sh         # one-command environment setup
-└── pyproject.toml               # pytest + ruff configuration
+│   ├── data/                   inspection, preprocessing, transforms, dataset, split
+│   ├── models/                 factory, training, metrics, evaluation, bootstrap, figures
+│   ├── explain/                Grad-CAM
+│   ├── db/                     SQLite schema and data-access layer
+│   ├── analysis/               progression analysis
+│   └── utils/                  config, seeding, logging
+└── tests/                      pytest suite
 ```
 
 ---
 
-## 6. Milestones
+## What is deliberately not in this repository
 
-| # | Milestone | Status |
-|--:|-----------|--------|
-| 1 | Dataset acquisition and inspection | ✅ |
-| 2 | Preprocessing and augmentation | ⬜ |
-| 3 | Stratified train/val/test split | ⬜ |
-| 4 | Baseline transfer-learning model | ⬜ |
-| 5 | Imbalance handling and training | ⬜ |
-| 6 | Evaluation and experiment comparison | ⬜ |
-| 7 | Grad-CAM explainability | ⬜ |
-| 8 | SQLite patient-visit database | ⬜ |
-| 9 | Progression analysis and charts | ⬜ |
-| 10 | Streamlit web application | ⬜ |
-| 11 | Testing, documentation, presentation | ⬜ |
+| | Why | How to obtain |
+|---|---|---|
+| `data/raw/` — the APTOS images | ~10 GB, and Kaggle's competition rules do not permit redistribution | Download from Kaggle after accepting the rules |
+| `.venv/` | Environment, not source | `pip install -r requirements.txt` |
+| `*.pt` model checkpoints | 30–90 MB each; bloats every clone | Attached to the GitHub **Releases** page, or retrain with the commands above |
+| `app/assets/*.sqlite3` | Runtime state, regenerable | `python -m scripts.m8_init_db --demo` |
+| `kaggle.json` | Credential | Yours, from your Kaggle account |
 
-## 7. Reproducibility
+Everything needed to reproduce the results — code, configs, the exact data split, and all
+generated metrics — **is** committed.
 
-Every script calls `set_seed(cfg["project"]["seed"])` before doing anything random.
-For the final run you report in your paper, use `set_seed(seed, deterministic=True)`
-and record the exact commit hash, GPU model, and library versions
-(`pip freeze > reports/environment.txt`).
+---
 
-## 8. References
+## Limitations
 
-See `docs/references.md` (populated in Milestone 11).
+Stated plainly, because a screening tool that overstates itself is worse than no tool.
+
+- **Single dataset, no external validation.** Trained and evaluated entirely on APTOS 2019.
+  Performance on images from different cameras, populations, or capture protocols is unknown.
+- **Small rare classes.** Severe DR is 5.3% of the data — roughly 29 images in the test
+  split. Per-class metrics for that stage carry wide uncertainty.
+- **No clinician review.** No ophthalmologist validated any prediction or heatmap in this
+  project.
+- **Simulated longitudinal data.** APTOS is cross-sectional: one image per patient, no
+  follow-up. The progression module is demonstrated on **synthetic** visit histories. Every
+  simulated record is flagged `is_simulated=1` in the database, marked in the UI and on every
+  chart, and labelled in the PDF report. The progression *logic* is real and would run
+  unchanged on real longitudinal data.
+- **Grad-CAM localises regions, not lesions.** The heatmap is roughly 10×10 upsampled to
+  300×300. A plausible-looking heatmap is not proof the model reasoned correctly.
+- **Architectures are not clearly separated.** Differences between the three models are small
+  relative to their confidence intervals.
+- **Suggested review intervals are illustrative only** and are not clinical guidance.
+- **Not deployed publicly, deliberately.** A publicly reachable tool that returns a severity
+  grade for an uploaded retinal photograph carries a real risk of misuse regardless of any
+  disclaimer.
+
+## Future work
+
+The architecture comparison suggests capacity is not the bottleneck, which points the next
+steps at data rather than models:
+
+- External validation on EyePACS (Kaggle DR 2015, ~35,000 images)
+- Pretraining on EyePACS before fine-tuning on APTOS
+- Ordinal regression loss instead of categorical cross-entropy, matching the metric
+- Test-time augmentation and ensembling
+- Higher input resolution for microaneurysm detection, given sufficient GPU memory
+- Lesion-level annotation to validate Grad-CAM against ground-truth pathology locations
+
+---
+
+## References
+
+1. Asia Pacific Tele-Ophthalmology Society, "APTOS 2019 Blindness Detection," Kaggle, 2019.
+2. C. P. Wilkinson et al., "Proposed international clinical diabetic retinopathy and diabetic
+   macular edema disease severity scales," *Ophthalmology*, vol. 110, no. 9, pp. 1677–1682, 2003.
+3. V. Gulshan et al., "Development and validation of a deep learning algorithm for detection
+   of diabetic retinopathy in retinal fundus photographs," *JAMA*, vol. 316, no. 22,
+   pp. 2402–2410, 2016.
+4. G. Huang, Z. Liu, L. van der Maaten, K. Q. Weinberger, "Densely connected convolutional
+   networks," in *Proc. IEEE CVPR*, 2017, pp. 4700–4708.
+5. K. He, X. Zhang, S. Ren, J. Sun, "Deep residual learning for image recognition," in
+   *Proc. IEEE CVPR*, 2016, pp. 770–778.
+6. M. Tan and Q. V. Le, "EfficientNet: Rethinking model scaling for convolutional neural
+   networks," in *Proc. ICML*, 2019, pp. 6105–6114.
+7. R. R. Selvaraju et al., "Grad-CAM: Visual explanations from deep networks via
+   gradient-based localization," in *Proc. IEEE ICCV*, 2017, pp. 618–626.
+8. J. Cohen, "Weighted kappa: Nominal scale agreement with provision for scaled disagreement
+   or partial credit," *Psychological Bulletin*, vol. 70, no. 4, pp. 213–220, 1968.
+9. B. Efron and R. J. Tibshirani, *An Introduction to the Bootstrap*. Chapman & Hall, 1993.
+10. R. Wightman, "PyTorch Image Models (timm)," GitHub, 2019.
+
+---
+
+## Licence and use
+
+Academic coursework. The APTOS 2019 dataset remains subject to Kaggle's competition rules.
+This software is not licensed, certified, or approved for any clinical purpose.
