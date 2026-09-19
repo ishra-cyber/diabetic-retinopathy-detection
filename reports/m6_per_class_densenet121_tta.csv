@@ -1,0 +1,6 @@
+label,class_name,precision,recall,f1,support
+0,No DR,0.9818,0.9926,0.9872,271
+1,Mild,0.614,0.625,0.6195,56
+2,Moderate,0.7357,0.6867,0.7103,150
+3,Severe,0.3396,0.6207,0.439,29
+4,Proliferative DR,0.8077,0.4773,0.6,44

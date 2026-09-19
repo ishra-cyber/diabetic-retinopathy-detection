@@ -27,7 +27,19 @@ saturation move only slightly.
 
 Geometry is a different story. A fundus photograph has no canonical
 orientation - the camera can be rotated, and left and right eyes are mirror
-images - so flips and modest rotation are free, label-preserving variety.
+images - so flips and rotation are free, label-preserving variety. "Modest"
+rotation was the original setting and it was too timid: the Milestone 5 curves
+show all three architectures overfitting (DenseNet train loss 0.384 against val
+loss 1.050; EfficientNet-B3 val loss reaching 1.770 from a minimum of 0.911),
+which is the condition more augmentation exists to treat. Since a fundus image
+has no "up", the full 0-360 degrees is available at zero risk to the label -
+there was never a reason to use only a twelfth of it.
+
+``RandomErasing`` is the other addition. Blanking a random rectangle forces the
+network to find evidence in more than one place, which is a direct
+counter-measure to a model memorising one distinctive patch per training image.
+It is off by default (``erase_p: 0.0``) so existing experiment configs keep
+their exact behaviour.
 """
 
 from __future__ import annotations
@@ -101,6 +113,18 @@ def build_transforms(cfg: Dict[str, Any], train: bool) -> v2.Compose:
         ),
 
         *tail,
+
+        # -- occlusion -------------------------------------------------------
+        # AFTER normalisation on purpose: value=0 then means "the dataset mean",
+        # which is a neutral patch. Erasing before normalisation would paint a
+        # black rectangle that the normalisation turns into a strong negative
+        # signal - an artefact the model can learn to spot.
+        *([v2.RandomErasing(
+            p=float(aug.get("erase_p", 0.0)),
+            scale=tuple(aug.get("erase_scale", (0.02, 0.15))),
+            ratio=tuple(aug.get("erase_ratio", (0.3, 3.3))),
+            value=0,
+        )] if float(aug.get("erase_p", 0.0)) > 0 else []),
     ])
 
 

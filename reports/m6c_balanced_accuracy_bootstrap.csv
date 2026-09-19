@@ -1,0 +1,9 @@
+model,metric,difference,ci_low,ci_high,prob_better,distinguishable
+densenet121_weighted,qwk,-0.0001,-0.0164,0.0166,0.476,False
+densenet121_weighted,accuracy,-0.0364,-0.0636,-0.0091,0.002,True
+effnetb3_weighted,qwk,0.0136,-0.007,0.0343,0.899,False
+effnetb3_weighted,accuracy,-0.0182,-0.0455,0.0073,0.068,False
+resnet50_weighted,qwk,-0.0092,-0.0224,0.0036,0.068,False
+resnet50_weighted,accuracy,-0.0218,-0.0436,0.0,0.015,False
+ensemble_gmean,qwk,0.0059,-0.0072,0.0202,0.815,False
+ensemble_gmean,accuracy,-0.0345,-0.0618,-0.0073,0.007,True

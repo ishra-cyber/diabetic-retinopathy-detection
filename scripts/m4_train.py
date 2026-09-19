@@ -117,9 +117,24 @@ def main() -> int:
         full = 2562
         if summary.get("mean_epoch_seconds"):
             est = summary["mean_epoch_seconds"] * full / max(limit, 1) / 60
-            LOG.info("Rough estimate for a full epoch (%d images): %.1f min", full, est)
-            LOG.info("So %d epochs would take roughly %.0f min.",
+            LOG.info("Naive estimate for a full epoch (%d images): %.1f min", full, est)
+            LOG.info("So %d epochs would come to roughly %.0f min.",
                      cfg["training"]["epochs"], est * cfg["training"]["epochs"])
+            # That extrapolation is linear in image count, and it is WRONG -
+            # badly, and always in the pessimistic direction. A 64-image epoch
+            # is nearly all fixed cost: spawning Windows DataLoader workers,
+            # cuDNN autotuning the first convolution, moving the model to the
+            # GPU. Those happen once per epoch regardless of size, so scaling
+            # 64 images up by 40x scales the overhead by 40x too.
+            #
+            # For the real figure, read epoch_seconds in an existing run's
+            # history.csv: the Milestone 5 DenseNet121 run averaged about 45s
+            # per epoch over the full 2,562 training and 550 validation images,
+            # roughly 12x faster per image than a smoke epoch. Expect a 45-epoch
+            # run to take well under an hour, not the number printed above.
+            LOG.info("Treat that as an upper bound only - a 64-image epoch is "
+                     "mostly fixed startup cost. See epoch_seconds in any "
+                     "existing experiments/*/history.csv for the real rate.")
         LOG.info("-" * 60)
 
     return 0

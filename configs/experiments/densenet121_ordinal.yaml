@@ -1,0 +1,30 @@
+# ORDINAL arm: one regression output, thresholds fitted on validation.
+#
+# The hypothesis, straight out of reports/m6_error_analysis.json:
+#     exact grade match   79.6%
+#     within one grade    96.4%
+# A model that is within one grade 96% of the time is being let down by argmax
+# over five independent logits, which cannot see that class 2 lies between 1
+# and 3. Predicting a single number on the 0-4 scale and cutting it with
+# thresholds tuned for QWK should convert part of that 16.8% gap into exact
+# matches - and the thresholds, being free parameters fitted against a 49%/5%
+# class imbalance, are also the cheapest available lever on Severe recall
+# (0.379 in M6).
+#
+# Identical to densenet121_long in every other respect, so the comparison
+# isolates the head.
+#
+# Run:  python -m scripts.m4_train --experiment densenet121_ordinal
+
+run_name: "densenet121_ordinal"
+
+training:
+  backbone: "densenet121"
+  head: "ordinal"
+  ordinal_beta: 1.0
+  ordinal_sigma: 0.5
+  threshold_metric: "qwk"      # matches monitor_metric, so selection is self-consistent
+  batch_size: 6
+  grad_accum_steps: 3          # effective batch 18
+  lr: 3.0e-4
+  imbalance_strategy: "weighted_loss"

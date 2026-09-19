@@ -11,6 +11,18 @@ is nowhere near enough to learn low-level visual filters. ImageNet features
 (edges, textures, blob and vessel-like structures) transfer well to fundus
 photography, so we only need to learn the mapping from those features to the
 five severity grades.
+
+Two head types
+--------------
+``classification``  five outputs, softmax, cross-entropy. The Milestone 4-6
+                    setup.
+``ordinal``         ONE output, a real number on the 0-4 severity scale, cut
+                    into grades by thresholds fitted on validation (see
+                    ``src.models.thresholds`` for why).
+
+The backbone is identical either way - only the final linear layer's width
+changes - so a run of each is a clean comparison of the head, not of two
+different models.
 """
 
 from __future__ import annotations
@@ -72,12 +84,29 @@ def build_model(
     return model
 
 
+# ---------------------------------------------------------------------------
+HEAD_TYPES = ("classification", "ordinal")
+
+
+def head_type(cfg: Dict[str, Any]) -> str:
+    """Which head this config asks for. Defaults to the original behaviour."""
+    head = str(cfg.get("training", {}).get("head", "classification")).lower()
+    if head not in HEAD_TYPES:
+        raise ValueError(f"training.head must be one of {list(HEAD_TYPES)}, got '{head}'")
+    return head
+
+
+def num_outputs(cfg: Dict[str, Any]) -> int:
+    """Width of the final layer: five logits, or one regression score."""
+    return 1 if head_type(cfg) == "ordinal" else int(cfg["dataset"]["num_classes"])
+
+
 def build_from_config(cfg: Dict[str, Any]) -> nn.Module:
     """Build the model described by ``cfg['training']``."""
     tr = cfg["training"]
     return build_model(
         backbone=tr["backbone"],
-        num_classes=cfg["dataset"]["num_classes"],
+        num_classes=num_outputs(cfg),
         pretrained=bool(tr.get("pretrained", True)),
         drop_rate=float(tr.get("drop_rate", 0.0)),
     )
@@ -125,18 +154,21 @@ def describe_model(model: nn.Module, backbone: str) -> str:
 
 @torch.no_grad()
 def check_forward(model: nn.Module, size: int = 300, num_classes: int = 5,
-                  device: str = "cpu") -> Tuple[int, ...]:
+                  device: str = "cpu", expected_outputs: int | None = None
+                  ) -> Tuple[int, ...]:
     """Push one dummy batch through the model to validate the output shape.
 
     Cheap insurance: catches a wrong head or a size mismatch in a second,
     instead of at the end of the first epoch.
     """
+    width = int(expected_outputs if expected_outputs is not None else num_classes)
     model = model.to(device).eval()
     dummy = torch.zeros(2, 3, size, size, device=device)
     out = model(dummy)
-    if tuple(out.shape) != (2, num_classes):
+    if tuple(out.shape) != (2, width):
         raise ValueError(
-            f"Model output shape {tuple(out.shape)} != expected (2, {num_classes}). "
-            "Check num_classes was passed to timm.create_model."
+            f"Model output shape {tuple(out.shape)} != expected (2, {width}). "
+            "Check the head width was passed to timm.create_model "
+            "(one output for the ordinal head, num_classes for classification)."
         )
     return tuple(out.shape)

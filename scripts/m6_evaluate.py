@@ -13,6 +13,7 @@ Run
 ---
     python -m scripts.m6_evaluate
     python -m scripts.m6_evaluate --split val    # sanity check without burning test
+    python -m scripts.m6_evaluate --split val --tta   # measure the TTA gain on val FIRST
 
 Produces
 --------
@@ -71,12 +72,16 @@ def main() -> int:
                         help="specific run folder names (default: all finished runs)")
     parser.add_argument("--n-boot", type=int, default=1000,
                         help="bootstrap resamples for confidence intervals (0 = skip)")
+    parser.add_argument("--tta", action="store_true",
+                        help="average predictions over the four flip views. Decide "
+                             "whether to use it on --split val; only then re-run on test.")
     args = parser.parse_args()
 
     cfg = load_config()
     set_seed(cfg["project"]["seed"])
     ensure_dirs(cfg, "reports_dir", "figures_dir")
     reports_dir = get_path(cfg, "reports_dir")
+    suffix = "_tta" if args.tta else ""
     figures_dir = get_path(cfg, "figures_dir")
     names = class_names(cfg)
 
@@ -92,6 +97,9 @@ def main() -> int:
 
     LOG.info("Evaluating %d run(s) on the %s split: %s",
              len(runs), args.split, ", ".join(r.name for r in runs))
+    if args.tta:
+        LOG.info("Test-time augmentation ON: averaging over none/hflip/vflip/hvflip "
+                 "(4x inference). Outputs are written under *_tta names.")
     if args.split == "test":
         LOG.warning("This is the HELD-OUT TEST SPLIT. Report these numbers as final; "
                     "do not tune anything and re-run.")
@@ -101,7 +109,7 @@ def main() -> int:
         LOG.info("-" * 64)
         LOG.info("Run: %s", run_dir.name)
         try:
-            metrics = evaluate_run(run_dir, cfg, device, split=args.split)
+            metrics = evaluate_run(run_dir, cfg, device, split=args.split, tta=args.tta)
         except Exception as exc:  # noqa: BLE001
             LOG.error("  failed: %s: %s", type(exc).__name__, exc)
             continue
@@ -126,7 +134,7 @@ def main() -> int:
     LOG.info("-" * 64)
     LOG.info("%s-split comparison:\n%s", args.split.upper(), comparison.to_string(index=False))
 
-    csv_path = reports_dir / f"m6_{args.split}_comparison.csv"
+    csv_path = reports_dir / f"m6_{args.split}{suffix}_comparison.csv"
     comparison.to_csv(csv_path, index=False)
     LOG.info("Saved table: %s", csv_path)
 
@@ -147,11 +155,11 @@ def main() -> int:
                 ["model", "qwk", "qwk_ci", "accuracy", "accuracy_ci",
                  "balanced_accuracy", "balanced_accuracy_ci"]
             ].to_string(index=False))
-            ci_table.to_csv(reports_dir / f"m6_{args.split}_confidence_intervals.csv",
+            ci_table.to_csv(reports_dir / f"m6_{args.split}{suffix}_confidence_intervals.csv",
                             index=False)
 
             plot_forest(ci_table, "qwk",
-                        figures_dir / f"m6_qwk_confidence_intervals_{args.split}.png",
+                        figures_dir / f"m6_qwk_confidence_intervals_{args.split}{suffix}.png",
                         title=f"{args.split.capitalize()} QWK with 95% bootstrap CI")
 
             if len(all_metrics) > 1:
@@ -159,7 +167,7 @@ def main() -> int:
                                             seed=cfg["project"]["seed"])
                 LOG.info("\nPaired comparisons (same resample scored by both models):\n%s",
                          pairs.to_string(index=False))
-                pairs.to_csv(reports_dir / f"m6_{args.split}_pairwise.csv", index=False)
+                pairs.to_csv(reports_dir / f"m6_{args.split}{suffix}_pairwise.csv", index=False)
 
                 LOG.info("-" * 64)
                 LOG.info("FOR YOUR REPORT:")
@@ -176,21 +184,21 @@ def main() -> int:
 
     plot_confusion_matrices(
         best["confusion_matrix"], names,
-        figures_dir / f"m6_confusion_matrix_{tag}.png",
+        figures_dir / f"m6_confusion_matrix_{tag}{suffix}.png",
         title=f"Confusion matrix - {tag} ({args.split} split, n={best['n_samples']})",
     )
-    plot_per_class_recall(all_metrics, names, figures_dir / "m6_per_class_recall.png")
+    plot_per_class_recall(all_metrics, names, figures_dir / f"m6_per_class_recall{suffix}.png")
     plot_roc_curves(best["_y_true"], best["_probabilities"], names,
-                    figures_dir / f"m6_roc_curves_{tag}.png",
+                    figures_dir / f"m6_roc_curves_{tag}{suffix}.png",
                     title=f"One-vs-rest ROC - {tag} ({args.split} split)")
-    plot_model_comparison(comparison, figures_dir / "m6_model_comparison.png")
+    plot_model_comparison(comparison, figures_dir / f"m6_model_comparison{suffix}.png")
 
     errors = error_analysis(best["_y_true"], best["_y_pred"], best["_ids"])
-    plot_error_distance(errors, figures_dir / f"m6_error_distance_{tag}.png",
+    plot_error_distance(errors, figures_dir / f"m6_error_distance_{tag}{suffix}.png",
                         title=f"Error magnitude - {tag} ({args.split} split)")
 
-    per_class_table(best).to_csv(reports_dir / f"m6_per_class_{tag}.csv", index=False)
-    (reports_dir / "m6_error_analysis.json").write_text(
+    per_class_table(best).to_csv(reports_dir / f"m6_per_class_{tag}{suffix}.csv", index=False)
+    (reports_dir / f"m6_error_analysis{suffix}.json").write_text(
         json.dumps({"best_model": tag, **errors}, indent=2), encoding="utf-8")
 
     # -- the sentences worth putting in the report --------------------------

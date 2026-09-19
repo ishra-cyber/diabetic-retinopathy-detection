@@ -1,0 +1,4 @@
+,densenet121_weighted,effnetb3_weighted,resnet50_weighted
+densenet121_weighted,1.0,0.8109,0.8564
+effnetb3_weighted,0.8109,1.0,0.8491
+resnet50_weighted,0.8564,0.8491,1.0

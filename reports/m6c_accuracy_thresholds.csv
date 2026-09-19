@@ -1,0 +1,5 @@
+model,metric,t0,t1,t2,t3
+densenet121_weighted,accuracy,0.592,1.78,2.99,3.232
+effnetb3_weighted,accuracy,0.5242,1.4011,2.8699,3.0891
+resnet50_weighted,accuracy,0.1298,1.1845,2.9642,3.1619
+ensemble_gmean,accuracy,0.13,1.164,2.946,3.298

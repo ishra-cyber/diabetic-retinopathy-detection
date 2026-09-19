@@ -1,0 +1,7 @@
+model_a,model_b,difference,ci_low,ci_high,prob_a_better,distinguishable
+densenet121_weighted,effnetb3_weighted,0.0327,0.004,0.0647,0.991,True
+densenet121_weighted,resnet50_weighted,0.0137,-0.0118,0.0398,0.846,False
+densenet121_weighted,ensemble_gmean,-0.0025,-0.0251,0.0208,0.437,False
+effnetb3_weighted,resnet50_weighted,-0.019,-0.0492,0.0096,0.096,False
+effnetb3_weighted,ensemble_gmean,-0.0352,-0.0598,-0.0124,0.0,True
+resnet50_weighted,ensemble_gmean,-0.0162,-0.0348,0.0024,0.04,False

@@ -1,0 +1,22 @@
+# CONTROL arm for the ordinal-head experiment.
+#
+# DenseNet121 with the ORIGINAL classification head, on the CORRECTED schedule
+# (45 epochs, patience 12, smoothed early stopping). Its only difference from
+# configs/experiments/densenet121_ordinal.yaml is training.head.
+#
+# This run exists so the comparison has one variable. The Milestone 5
+# densenet121_weighted run is NOT a valid control: it used 20 epochs and raw-score
+# patience 5, so a difference against it would confound the head with the
+# schedule, and an examiner is entitled to point that out.
+#
+# Run:  python -m scripts.m4_train --experiment densenet121_long
+
+run_name: "densenet121_long"
+
+training:
+  backbone: "densenet121"
+  head: "classification"
+  batch_size: 6
+  grad_accum_steps: 3          # effective batch 18
+  lr: 3.0e-4
+  imbalance_strategy: "weighted_loss"

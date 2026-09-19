@@ -19,6 +19,18 @@ Design notes
 * **Class imbalance** is handled by weighted cross-entropy, with weights taken
   from the TRAIN split only. Using whole-dataset counts would leak test-set
   label statistics into training.
+* **Two head types.** ``training.head: classification`` is the original 5-way
+  softmax. ``training.head: ordinal`` trains a single regression output and
+  cuts it into grades with thresholds fitted on validation at every epoch (see
+  ``src.models.thresholds``). Everything else - schedule, AMP, accumulation,
+  checkpointing - is shared, so the two are directly comparable.
+* **Early stopping on a smoothed curve.** Validation QWK on 550 images has a
+  sampling noise of roughly +/-0.03. Comparing raw epoch-to-epoch scores against
+  a patience counter stops runs on noise: the Milestone 5 EfficientNet-B3 run
+  halted at epoch 8 having peaked at epoch 3 of a 20-epoch cosine schedule,
+  before the schedule had annealed at all. Patience is therefore counted
+  against a moving average, while ``best.pt`` still tracks the best single
+  epoch.
 
 Every run writes to ``experiments/<run_name>/``:
     best.pt              model weights at the best validation QWK
@@ -35,17 +47,30 @@ import json
 import math
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from src.data.dataset import build_loader, make_weighted_sampler
 from src.data.split import load_split, split_fingerprint
-from src.models.factory import build_from_config, check_forward, describe_model
+from src.models.factory import (
+    build_from_config,
+    check_forward,
+    describe_model,
+    head_type,
+    num_outputs,
+)
 from src.models.metrics import compute_all_metrics, summarise_for_console
+from src.models.thresholds import (
+    apply_thresholds,
+    describe as describe_thresholds,
+    fit_thresholds,
+    scores_to_probabilities,
+)
 from src.utils.config import class_names, get_path, save_config_snapshot
 from src.utils.logging_utils import get_logger
 from src.utils.seed import set_seed
@@ -89,16 +114,50 @@ def class_weights_from_labels(labels: List[int], num_classes: int) -> np.ndarray
     return weights
 
 
+class OrdinalRegressionLoss(nn.Module):
+    """Smooth L1 between a single predicted score and the integer grade.
+
+    Why Smooth L1 rather than plain MSE: APTOS labels are graded by clinicians
+    and genuinely noisy, and squared error lets one badly-labelled image
+    dominate a batch's gradient. Smooth L1 is quadratic near zero (so it still
+    cares about small errors, which is the whole point of going ordinal) and
+    linear beyond ``beta``, which caps the influence of an outlier.
+
+    Class weights carry over from the classification path unchanged: the same
+    inverse-frequency weights, applied per sample by its true grade. Without
+    them a regressor trained on data that is 49% class 0 simply learns to
+    predict low numbers.
+    """
+
+    def __init__(self, class_weights: Optional[torch.Tensor] = None,
+                 beta: float = 1.0) -> None:
+        super().__init__()
+        self.beta = float(beta)
+        self.register_buffer(
+            "class_weights",
+            class_weights if class_weights is not None else torch.empty(0),
+        )
+
+    def forward(self, outputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        scores = outputs.reshape(outputs.shape[0])          # (N, 1) -> (N,)
+        loss = F.smooth_l1_loss(scores, targets.float(), beta=self.beta,
+                                reduction="none")
+        if self.class_weights.numel():
+            loss = loss * self.class_weights[targets]
+        return loss.mean()
+
+
 def build_criterion(
     cfg: Dict[str, Any],
     train_labels: List[int],
     device: torch.device,
     logger,
 ) -> Tuple[nn.Module, Optional[np.ndarray]]:
-    """Cross-entropy, optionally class-weighted according to the strategy."""
+    """Cross-entropy or ordinal regression loss, optionally class-weighted."""
     strategy = cfg["training"].get("imbalance_strategy", "weighted_loss")
     num_classes = cfg["dataset"]["num_classes"]
     smoothing = float(cfg["training"].get("label_smoothing", 0.0))
+    head = head_type(cfg)
 
     weights = None
     if strategy in ("weighted_loss", "both"):
@@ -111,7 +170,16 @@ def build_criterion(
         logger.info("Unweighted cross-entropy (imbalance_strategy=%s).", strategy)
         weight_tensor = None
 
-    criterion = nn.CrossEntropyLoss(weight=weight_tensor, label_smoothing=smoothing)
+    if head == "ordinal":
+        beta = float(cfg["training"].get("ordinal_beta", 1.0))
+        logger.info("Ordinal head: Smooth L1 regression loss (beta=%.2f), "
+                    "thresholds fitted on validation each epoch.", beta)
+        criterion = OrdinalRegressionLoss(weight_tensor, beta=beta).to(device)
+    else:
+        if smoothing:
+            logger.info("Label smoothing: %.3f (clinician-graded labels are noisy, "
+                        "so a hard one-hot target overstates what is known).", smoothing)
+        criterion = nn.CrossEntropyLoss(weight=weight_tensor, label_smoothing=smoothing)
     return criterion, weights
 
 
@@ -188,12 +256,24 @@ def evaluate(
     device: torch.device,
     amp_ctx,
     cfg: Dict[str, Any],
+    thresholds: Optional[Sequence[float]] = None,
+    refit_thresholds: bool = True,
 ) -> Dict[str, Any]:
-    """Evaluate on a loader. Returns the metrics dict plus loss and raw arrays."""
+    """Evaluate on a loader. Returns the metrics dict plus loss and raw arrays.
+
+    For the ordinal head the thresholds are re-fitted on this loader by default.
+    That is correct for the validation split - the thresholds are part of the
+    model and validation is where model choices are made - and wrong for test,
+    where ``refit_thresholds=False`` plus the thresholds stored in the
+    checkpoint is the only honest option.
+    """
+    head = head_type(cfg)
+    num_classes = cfg["dataset"]["num_classes"]
+
     model.eval()
     total_loss = 0.0
     n_batches = 0
-    all_probs: List[np.ndarray] = []
+    all_outputs: List[np.ndarray] = []
     all_true: List[np.ndarray] = []
 
     for images, labels in loader:
@@ -208,19 +288,48 @@ def evaluate(
         n_batches += 1
 
         # float() before softmax: fp16 softmax can underflow to zero.
-        probs = torch.softmax(logits.float(), dim=1)
-        all_probs.append(probs.cpu().numpy())
+        all_outputs.append(logits.float().cpu().numpy())
         all_true.append(labels.cpu().numpy())
 
-    probabilities = np.concatenate(all_probs, axis=0)
+    outputs = np.concatenate(all_outputs, axis=0)
     y_true = np.concatenate(all_true, axis=0)
-    y_pred = probabilities.argmax(axis=1)
+    threshold_fit: Optional[Dict[str, Any]] = None
+    scores: Optional[np.ndarray] = None
+
+    if head == "ordinal":
+        scores = outputs.reshape(-1)
+        if refit_thresholds or thresholds is None:
+            # Which objective the cut-points maximise is a real choice, not a
+            # detail: QWK-optimal and accuracy-optimal thresholds differ, and on
+            # this dataset they trade against each other (see
+            # reports/m6c_objective_tradeoff.csv). Fit the one you will report.
+            threshold_fit = fit_thresholds(
+                scores, y_true, num_classes=num_classes,
+                metric=str(cfg["training"].get("threshold_metric", "qwk")),
+            )
+            edges = threshold_fit["thresholds"]
+        else:
+            edges = list(thresholds)
+        y_pred = apply_thresholds(scores, edges)
+        probabilities = scores_to_probabilities(
+            scores, num_classes=num_classes,
+            sigma=float(cfg["training"].get("ordinal_sigma", 0.5)),
+            thresholds=edges,
+        )
+    else:
+        edges = None
+        probabilities = torch.softmax(torch.from_numpy(outputs), dim=1).numpy()
+        y_pred = probabilities.argmax(axis=1)
 
     metrics = compute_all_metrics(y_true, y_pred, probabilities, class_names(cfg))
     metrics["loss"] = round(total_loss / max(n_batches, 1), 5)
+    metrics["head"] = head
+    metrics["thresholds"] = list(edges) if edges is not None else None
+    metrics["threshold_fit"] = threshold_fit
     metrics["_y_true"] = y_true.tolist()
-    metrics["_y_pred"] = y_pred.tolist()
+    metrics["_y_pred"] = np.asarray(y_pred).tolist()
     metrics["_probabilities"] = probabilities.tolist()
+    metrics["_scores"] = scores.tolist() if scores is not None else None
     return metrics
 
 
@@ -302,10 +411,15 @@ def train(cfg: Dict[str, Any], limit: Optional[int] = None,
     logger.info("Split fingerprint: %s", fingerprint)
 
     # -- model -----------------------------------------------------------
+    head = head_type(cfg)
+    width = num_outputs(cfg)
+    logger.info("Head: %s (%d output%s)", head, width, "" if width == 1 else "s")
+
     model = build_from_config(cfg)
     logger.info("Model:\n%s", describe_model(model, tr["backbone"]))
     out_shape = check_forward(model, size=cfg["preprocessing"]["image_size"],
-                              num_classes=num_classes, device="cpu")
+                              num_classes=num_classes, device="cpu",
+                              expected_outputs=width)
     logger.info("Forward check passed: output shape %s", out_shape)
     model = model.to(device)
 
@@ -334,6 +448,13 @@ def train(cfg: Dict[str, Any], limit: Optional[int] = None,
     # -- loop ------------------------------------------------------------
     monitor = tr.get("monitor_metric", "val_qwk")
     patience = int(tr.get("early_stopping_patience", 5))
+    # Patience is counted against a moving average of the monitored metric, not
+    # the raw per-epoch value - see the module docstring. Window 1 restores the
+    # original behaviour exactly.
+    smooth_window = max(1, int(tr.get("selection_smooth_window", 3)))
+    monitor_history: List[float] = []
+    best_smoothed = -float("inf")
+    best_thresholds: Optional[List[float]] = None
     best_score = -float("inf")
     best_epoch = -1
     best_metrics: Dict[str, Any] = {}
@@ -375,6 +496,12 @@ def train(cfg: Dict[str, Any], limit: Optional[int] = None,
 
         epoch_time = time.perf_counter() - epoch_start
         score = val_metrics["qwk"] if monitor == "val_qwk" else val_metrics["accuracy"]
+        monitor_history.append(score)
+        smoothed = float(np.mean(monitor_history[-smooth_window:]))
+
+        if val_metrics.get("threshold_fit"):
+            logger.info("Thresholds fitted on validation:\n%s",
+                        describe_thresholds(val_metrics["threshold_fit"]))
 
         row = {
             "epoch": epoch,
@@ -385,6 +512,9 @@ def train(cfg: Dict[str, Any], limit: Optional[int] = None,
             "val_balanced_accuracy": val_metrics["balanced_accuracy"],
             "val_f1_macro": val_metrics["f1_macro"],
             "val_auc_macro": val_metrics.get("auc_macro", float("nan")),
+            "val_qwk_smoothed": round(smoothed, 5),
+            "thresholds": ("|".join(f"{t:.3f}" for t in val_metrics["thresholds"])
+                           if val_metrics.get("thresholds") else ""),
             "lr": round(last_lr, 8),
             "epoch_seconds": round(epoch_time, 1),
         }
@@ -410,6 +540,7 @@ def train(cfg: Dict[str, Any], limit: Optional[int] = None,
             improvement = score - best_score if best_score > -float("inf") else score
             best_score, best_epoch = score, epoch
             best_metrics = val_metrics
+            best_thresholds = val_metrics.get("thresholds")
             epochs_without_improvement = 0
             logger.info("  new best %s = %.4f (+%.4f) - saving best.pt", monitor, score, improvement)
 
@@ -419,6 +550,13 @@ def train(cfg: Dict[str, Any], limit: Optional[int] = None,
                         "model_state_dict": model.state_dict(),
                         "backbone": tr["backbone"],
                         "num_classes": num_classes,
+                        "head": head,
+                        "num_outputs": width,
+                        # The thresholds ARE part of the ordinal model. Storing
+                        # them here is what lets test evaluation apply the
+                        # validation-chosen cut-points instead of refitting.
+                        "thresholds": best_thresholds,
+                        "ordinal_sigma": float(tr.get("ordinal_sigma", 0.5)),
                         "image_size": cfg["preprocessing"]["image_size"],
                         "epoch": epoch,
                         monitor: score,
@@ -430,12 +568,22 @@ def train(cfg: Dict[str, Any], limit: Optional[int] = None,
                     },
                     run_dir / "best.pt",
                 )
+
+        # Early stopping is judged on the smoothed curve even when best.pt was
+        # just rewritten, so a single lucky epoch cannot reset patience either.
+        if smoothed > best_smoothed + 1e-6:
+            best_smoothed = smoothed
+            epochs_without_improvement = 0
         else:
             epochs_without_improvement += 1
-            logger.info("  no improvement (%d/%d) - best %s %.4f at epoch %d",
-                        epochs_without_improvement, patience, monitor, best_score, best_epoch)
+            logger.info("  smoothed %s %.4f (best %.4f) - no improvement (%d/%d); "
+                        "best raw %s %.4f at epoch %d",
+                        monitor, smoothed, best_smoothed,
+                        epochs_without_improvement, patience,
+                        monitor, best_score, best_epoch)
             if epochs_without_improvement >= patience:
-                logger.info("Early stopping triggered.")
+                logger.info("Early stopping: %d epochs without improvement in the "
+                            "%d-epoch moving average.", patience, smooth_window)
                 break
 
     total_time = time.perf_counter() - run_start
@@ -445,6 +593,10 @@ def train(cfg: Dict[str, Any], limit: Optional[int] = None,
         "run_name": run_name,
         "experiment": cfg.get("_experiment"),
         "backbone": tr["backbone"],
+        "head": head,
+        "thresholds": best_thresholds,
+        "threshold_metric": str(tr.get("threshold_metric", "qwk")),
+        "selection_smooth_window": smooth_window,
         "image_size": cfg["preprocessing"]["image_size"],
         "epochs_run": len(history),
         "epochs_configured": epochs,
@@ -473,11 +625,15 @@ def train(cfg: Dict[str, Any], limit: Optional[int] = None,
         )
         # Raw predictions for the Milestone 6 figures.
         if best_metrics:
+            # ids let the ensemble align runs by image rather than by row
+            # position; the Milestone 6b module falls back to position when an
+            # older file lacks them.
             np.savez_compressed(
                 run_dir / "val_predictions.npz",
                 y_true=np.asarray(best_metrics["_y_true"]),
                 y_pred=np.asarray(best_metrics["_y_pred"]),
                 probabilities=np.asarray(best_metrics["_probabilities"]),
+                ids=np.array(val_ds.ids, dtype=object),
             )
 
     logger.info("=" * 68)

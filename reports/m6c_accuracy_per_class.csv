@@ -1,0 +1,21 @@
+model,class_name,support,recall_argmax,recall_thresholded,recall_change
+densenet121_weighted,No DR,271,0.9705,0.952,-0.0185
+densenet121_weighted,Mild,56,0.5179,0.625,0.1071
+densenet121_weighted,Moderate,150,0.7267,0.8067,0.08
+densenet121_weighted,Severe,29,0.3793,0.1724,-0.2069
+densenet121_weighted,Proliferative DR,44,0.5909,0.5682,-0.0227
+effnetb3_weighted,No DR,271,0.9705,0.9631,-0.0074
+effnetb3_weighted,Mild,56,0.5536,0.2857,-0.2679
+effnetb3_weighted,Moderate,150,0.66,0.8933,0.2333
+effnetb3_weighted,Severe,29,0.6207,0.4483,-0.1724
+effnetb3_weighted,Proliferative DR,44,0.4091,0.4545,0.0454
+resnet50_weighted,No DR,271,0.9742,0.9299,-0.0443
+resnet50_weighted,Mild,56,0.4643,0.3214,-0.1429
+resnet50_weighted,Moderate,150,0.7933,0.9333,0.14
+resnet50_weighted,Severe,29,0.3448,0.2759,-0.0689
+resnet50_weighted,Proliferative DR,44,0.4318,0.4091,-0.0227
+ensemble_gmean,No DR,271,0.9705,0.9557,-0.0148
+ensemble_gmean,Mild,56,0.5179,0.2857,-0.2322
+ensemble_gmean,Moderate,150,0.7667,0.96,0.1933
+ensemble_gmean,Severe,29,0.4138,0.2414,-0.1724
+ensemble_gmean,Proliferative DR,44,0.5227,0.5227,0.0

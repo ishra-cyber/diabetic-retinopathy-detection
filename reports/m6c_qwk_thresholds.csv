@@ -1,0 +1,5 @@
+model,metric,t0,t1,t2,t3
+densenet121_weighted,qwk,0.504,1.78,2.264,3.144
+effnetb3_weighted,qwk,0.5,1.423,2.6726,3.133
+resnet50_weighted,qwk,0.1298,1.1845,2.6786,3.1839
+ensemble_gmean,qwk,0.13,1.164,2.396,3.078

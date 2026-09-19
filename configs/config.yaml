@@ -70,10 +70,26 @@ training:
   # The three architectures being compared: resnet50, efficientnet_b3, densenet121
   backbone: "efficientnet_b3"
   pretrained: true
+  # classification = five logits + softmax (Milestones 4-6).
+  # ordinal        = ONE regression output, cut into grades by thresholds fitted
+  #                  on validation. See src/models/thresholds.py for why: 96.4%
+  #                  of this model's errors are off-by-one, which is exactly the
+  #                  structure a 5-way softmax is unable to use.
+  head: "classification"
+  ordinal_beta: 1.0            # Smooth L1 transition point, in grades
+  ordinal_sigma: 0.5           # width of the derived pseudo-probabilities
+  # What the validation-fitted cut-points maximise: qwk | accuracy |
+  # balanced_accuracy. These give DIFFERENT thresholds and pull against each
+  # other - reports/m6c_objective_tradeoff.csv measures it on this data.
+  # balanced_accuracy is the clinically sensible choice for a screening tool,
+  # qwk matches the headline metric. Pick one and name it in the report.
+  threshold_metric: "qwk"
   batch_size: 8                # RTX 3050 6GB: 8 fits at 300px with AMP
   grad_accum_steps: 2          # effective batch = batch_size * this
   num_workers: 2               # Windows spawns processes; 2 is the sweet spot
-  epochs: 20                  # cosine schedule length; early stopping usually ends sooner
+  epochs: 45                  # cosine schedule length; early stopping usually ends sooner
+                              # (was 20: the M5 runs stopped at epochs 8-17, so the
+                              # cosine never finished annealing. See below.)
   lr: 3.0e-4
   weight_decay: 1.0e-4
   optimizer: "adamw"
@@ -83,7 +99,13 @@ training:
   use_amp: true                # mixed precision (big speed-up on RTX cards)
   max_grad_norm: 1.0           # gradient clipping; 0 disables it
   drop_rate: 0.0               # dropout before the classifier head
-  early_stopping_patience: 5
+  # Validation QWK is measured on 550 images and carries roughly +/-0.03 of
+  # sampling noise, so raw epoch-to-epoch comparisons stop runs on noise: the M5
+  # EfficientNet-B3 run peaked at epoch 3 and was killed at epoch 8 of a
+  # 20-epoch schedule. Patience is now counted against a moving average of the
+  # monitored metric; best.pt still tracks the best SINGLE epoch.
+  early_stopping_patience: 12
+  selection_smooth_window: 3   # 1 restores the old raw-score behaviour
   monitor_metric: "val_qwk"    # checkpoint selection metric
   imbalance_strategy: "weighted_loss"   # none | weighted_loss | oversample | both
 
@@ -99,6 +121,11 @@ augmentation:
   hue: 0.0                     # keep hue fixed - it carries lesion information
   scale_min: 0.90              # RandomResizedCrop-style zoom range
   scale_max: 1.00
+  # Occlusion. Off by default so the Milestone 4-6 runs stay reproducible;
+  # configs/experiments/densenet121_aug.yaml turns it on.
+  erase_p: 0.0                 # probability of blanking a random rectangle
+  erase_scale: [0.02, 0.15]    # fraction of the image area erased
+  erase_ratio: [0.3, 3.3]      # aspect-ratio range of that rectangle
 
 explain:
   method: "gradcam"
