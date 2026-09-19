@@ -1,21 +1,41 @@
 model,class_name,support,recall_argmax,recall_thresholded,recall_change
+densenet121_aug,No DR,271,0.9705,0.9631,-0.0074
+densenet121_aug,Mild,56,0.3929,0.7321,0.3392
+densenet121_aug,Moderate,150,0.6533,0.6933,0.04
+densenet121_aug,Severe,29,0.6552,0.2414,-0.4138
+densenet121_aug,Proliferative DR,44,0.4318,0.5227,0.0909
+densenet121_long,No DR,271,0.9557,0.9557,0.0
+densenet121_long,Mild,56,0.5,0.5179,0.0179
+densenet121_long,Moderate,150,0.72,0.5933,-0.1267
+densenet121_long,Severe,29,0.3103,0.2759,-0.0344
+densenet121_long,Proliferative DR,44,0.4773,0.5227,0.0454
+densenet121_ordinal,No DR,271,0.952,0.952,0.0
+densenet121_ordinal,Mild,56,0.4464,0.5536,0.1072
+densenet121_ordinal,Moderate,150,0.5267,0.6533,0.1266
+densenet121_ordinal,Severe,29,0.5172,0.3448,-0.1724
+densenet121_ordinal,Proliferative DR,44,0.4773,0.5227,0.0454
+densenet121_ordinal_aug,No DR,271,0.9594,0.9594,0.0
+densenet121_ordinal_aug,Mild,56,0.4821,0.4821,0.0
+densenet121_ordinal_aug,Moderate,150,0.5267,0.6733,0.1466
+densenet121_ordinal_aug,Severe,29,0.6207,0.4828,-0.1379
+densenet121_ordinal_aug,Proliferative DR,44,0.4318,0.5227,0.0909
 densenet121_weighted,No DR,271,0.9705,0.952,-0.0185
 densenet121_weighted,Mild,56,0.5179,0.6786,0.1607
-densenet121_weighted,Moderate,150,0.7267,0.5667,-0.16
-densenet121_weighted,Severe,29,0.3793,0.4138,0.0345
+densenet121_weighted,Moderate,150,0.7267,0.5733,-0.1534
+densenet121_weighted,Severe,29,0.3793,0.3793,0.0
 densenet121_weighted,Proliferative DR,44,0.5909,0.5682,-0.0227
 effnetb3_weighted,No DR,271,0.9705,0.9631,-0.0074
 effnetb3_weighted,Mild,56,0.5536,0.6607,0.1071
-effnetb3_weighted,Moderate,150,0.66,0.5533,-0.1067
+effnetb3_weighted,Moderate,150,0.66,0.5267,-0.1333
 effnetb3_weighted,Severe,29,0.6207,0.6207,0.0
 effnetb3_weighted,Proliferative DR,44,0.4091,0.4545,0.0454
-resnet50_weighted,No DR,271,0.9742,0.9299,-0.0443
+resnet50_weighted,No DR,271,0.9779,0.9299,-0.048
 resnet50_weighted,Mild,56,0.4643,0.5714,0.1071
-resnet50_weighted,Moderate,150,0.7933,0.7667,-0.0266
+resnet50_weighted,Moderate,150,0.8,0.7667,-0.0333
 resnet50_weighted,Severe,29,0.3448,0.3103,-0.0345
 resnet50_weighted,Proliferative DR,44,0.4318,0.4091,-0.0227
-ensemble_gmean,No DR,271,0.9705,0.9557,-0.0148
-ensemble_gmean,Mild,56,0.5179,0.6071,0.0892
-ensemble_gmean,Moderate,150,0.7667,0.58,-0.1867
-ensemble_gmean,Severe,29,0.4138,0.6897,0.2759
-ensemble_gmean,Proliferative DR,44,0.5227,0.5227,0.0
+ensemble_gmean,No DR,271,0.9705,0.9705,0.0
+ensemble_gmean,Mild,56,0.5536,0.6429,0.0893
+ensemble_gmean,Moderate,150,0.7533,0.6667,-0.0866
+ensemble_gmean,Severe,29,0.5517,0.6207,0.069
+ensemble_gmean,Proliferative DR,44,0.5,0.5,0.0

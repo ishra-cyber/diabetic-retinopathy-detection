@@ -1,0 +1,79 @@
+{
+  "best_model": "densenet121_ordinal_aug",
+  "n": 550,
+  "n_correct": 416,
+  "n_wrong": 134,
+  "exact_match_pct": 75.64,
+  "within_one_pct": 96.0,
+  "within_two_pct": 100.0,
+  "mean_abs_error": 0.2836,
+  "error_distance_counts": {
+    "0": 416,
+    "1": 112,
+    "2": 22,
+    "3": 0,
+    "4": 0
+  },
+  "worst_examples": [
+    {
+      "id": "1bf30c84bbad",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "e3ab63dc9a60",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "e4730ddde408",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "eaa0dfbd5024",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "e34fa07bd64d",
+      "true": 2,
+      "pred": 4,
+      "distance": 2
+    },
+    {
+      "id": "cd54d022e37d",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "da6389d129aa",
+      "true": 0,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "ee02294cc3d9",
+      "true": 2,
+      "pred": 4,
+      "distance": 2
+    },
+    {
+      "id": "af133a85ea0c",
+      "true": 1,
+      "pred": 3,
+      "distance": 2
+    },
+    {
+      "id": "b37aae3c8fe1",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    }
+  ]
+}

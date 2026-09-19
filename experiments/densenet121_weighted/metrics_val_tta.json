@@ -101,5 +101,7 @@
     "hflip",
     "vflip",
     "hvflip"
-  ]
+  ],
+  "head": "classification",
+  "thresholds": null
 }

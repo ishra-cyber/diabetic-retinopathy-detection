@@ -1,0 +1,115 @@
+project:
+  name: Intelligent Diabetic Retinopathy Detection and Progress Monitoring
+  seed: 42
+paths:
+  data_root: data
+  raw_dir: data/raw
+  aptos_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+  splits_dir: data/splits
+  experiments_dir: experiments
+  reports_dir: reports
+  figures_dir: reports/figures
+  db_path: app/assets/dr_monitor.sqlite3
+  uploads_dir: app/assets/uploads
+  gradcam_dir: app/assets/gradcam
+dataset:
+  name: aptos2019-blindness-detection
+  train_csv: train.csv
+  test_csv: test.csv
+  train_images: train_images
+  test_images: test_images
+  image_ext: .png
+  id_col: id_code
+  label_col: diagnosis
+  num_classes: 5
+  class_names:
+    0: No DR
+    1: Mild
+    2: Moderate
+    3: Severe
+    4: Proliferative DR
+  expected_train_rows: 3662
+  expected_test_rows: 1928
+preprocessing:
+  image_size: 300
+  crop_black_borders: true
+  border_tol: 7
+  border_min_frac: 0.0
+  pad_to_square: true
+  use_clahe: false
+  clahe_clip_limit: 2.0
+  clahe_tile_grid: 8
+  cache_dir_template: train_{size}
+  mean:
+  - 0.485
+  - 0.456
+  - 0.406
+  std:
+  - 0.229
+  - 0.224
+  - 0.225
+split:
+  test_size: 0.15
+  val_size: 0.15
+  stratify: true
+training:
+  backbone: densenet121
+  pretrained: true
+  head: ordinal
+  ordinal_beta: 1.0
+  ordinal_sigma: 0.5
+  threshold_metric: qwk
+  batch_size: 6
+  grad_accum_steps: 3
+  num_workers: 2
+  epochs: 45
+  lr: 0.0003
+  weight_decay: 0.0001
+  optimizer: adamw
+  scheduler: cosine
+  warmup_epochs: 1
+  label_smoothing: 0.0
+  use_amp: true
+  max_grad_norm: 1.0
+  drop_rate: 0.0
+  early_stopping_patience: 12
+  selection_smooth_window: 3
+  monitor_metric: val_qwk
+  imbalance_strategy: weighted_loss
+augmentation:
+  hflip_p: 0.5
+  vflip_p: 0.5
+  rotate_degrees: 15
+  brightness: 0.15
+  contrast: 0.15
+  saturation: 0.1
+  hue: 0.0
+  scale_min: 0.9
+  scale_max: 1.0
+  erase_p: 0.0
+  erase_scale:
+  - 0.02
+  - 0.15
+  erase_ratio:
+  - 0.3
+  - 3.3
+explain:
+  method: gradcam
+  target_layer: auto
+  overlay_alpha: 0.4
+app:
+  title: DR Screening Support Prototype
+  disclaimer: 'ACADEMIC PROTOTYPE - NOT A MEDICAL DEVICE. This application is a student
+    research project built for screening-support demonstration only. It is not validated
+    for clinical use, must not be used for diagnosis, triage, or treatment decisions,
+    and does not replace examination by a qualified ophthalmologist.
+
+    '
+run_name: densenet121_ordinal
+_meta:
+  _project_root: C:\Users\ishra\Downloads\dr_project\dr_project
+  _config_path: C:\Users\ishra\Downloads\dr_project\dr_project\configs\config.yaml
+  _experiment: densenet121_ordinal
+  _experiment_path: C:\Users\ishra\Downloads\dr_project\dr_project\configs\experiments\densenet121_ordinal.yaml

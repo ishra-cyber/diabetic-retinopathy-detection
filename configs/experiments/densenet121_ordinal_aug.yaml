@@ -1,0 +1,55 @@
+# COMBINED arm: ordinal head + stronger augmentation.
+#
+# The two interventions fixed different failure modes on validation, which is
+# the whole reason for combining them rather than picking one:
+#
+#   arm        QWK     acc    bal.acc  Mild   Severe  PDR
+#   long      0.9135  0.8073  0.6620   0.679  0.517   0.432
+#   aug       0.9139  0.7945  0.6787   0.536  0.793   0.432
+#   ordinal   0.9210  0.8164  0.7020   0.679  0.621   0.545
+#
+# Augmentation bought Severe recall (0.517 -> 0.793) by reducing overfitting -
+# its train/val loss gap fell from 5.16x to 3.36x. The ordinal head bought every
+# aggregate metric plus Proliferative recall, by letting the loss and the
+# decision thresholds use the fact that the grades are ordered. Neither touches
+# what the other fixed, so the hypothesis is that the gains are additive.
+#
+# They might not be. Augmentation makes the score distribution noisier, and the
+# thresholds are fitted on 550 validation images, so a wider spread of scores
+# could make the four cut-points less stable rather than more. That is a real
+# possibility and the run is how we find out - a negative result here is worth
+# reporting either way.
+#
+# Everything else matches densenet121_long, densenet121_aug and
+# densenet121_ordinal exactly: same backbone, batch, accumulation, LR, schedule,
+# patience and imbalance strategy. Four arms, one variable each, one shared
+# control.
+#
+# Run:  python -m scripts.m4_train --experiment densenet121_ordinal_aug
+
+run_name: "densenet121_ordinal_aug"
+
+training:
+  backbone: "densenet121"
+  head: "ordinal"
+  ordinal_beta: 1.0
+  ordinal_sigma: 0.5
+  threshold_metric: "qwk"
+  batch_size: 6
+  grad_accum_steps: 3          # effective batch 18
+  lr: 3.0e-4
+  imbalance_strategy: "weighted_loss"
+
+augmentation:
+  hflip_p: 0.5
+  vflip_p: 0.5
+  rotate_degrees: 180
+  brightness: 0.15
+  contrast: 0.15
+  saturation: 0.10
+  hue: 0.0
+  scale_min: 0.70
+  scale_max: 1.00
+  erase_p: 0.25
+  erase_scale: [0.02, 0.15]
+  erase_ratio: [0.3, 3.3]

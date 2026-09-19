@@ -1,4 +1,8 @@
-,densenet121_weighted,effnetb3_weighted,resnet50_weighted
-densenet121_weighted,1.0,0.8109,0.8564
-effnetb3_weighted,0.8109,1.0,0.8491
-resnet50_weighted,0.8564,0.8491,1.0
+,densenet121_aug,densenet121_long,densenet121_ordinal,densenet121_ordinal_aug,densenet121_weighted,effnetb3_weighted,resnet50_weighted
+densenet121_aug,1.0,0.8091,0.7655,0.7891,0.8327,0.8091,0.8327
+densenet121_long,0.8091,1.0,0.7655,0.7836,0.8782,0.8109,0.8455
+densenet121_ordinal,0.7655,0.7655,1.0,0.7945,0.7727,0.7473,0.7873
+densenet121_ordinal_aug,0.7891,0.7836,0.7945,1.0,0.8,0.7709,0.7709
+densenet121_weighted,0.8327,0.8782,0.7727,0.8,1.0,0.8127,0.8564
+effnetb3_weighted,0.8091,0.8109,0.7473,0.7709,0.8127,1.0,0.8527
+resnet50_weighted,0.8327,0.8455,0.7873,0.7709,0.8564,0.8527,1.0

@@ -1,5 +1,9 @@
 model,metric,t0,t1,t2,t3
-densenet121_weighted,balanced_accuracy,0.592,1.868,2.5,3.232
-effnetb3_weighted,balanced_accuracy,0.5242,1.9491,2.6945,3.133
-resnet50_weighted,balanced_accuracy,0.1298,1.6898,2.7445,3.1619
-ensemble_gmean,balanced_accuracy,0.13,1.626,2.308,3.298
+densenet121_aug,balanced_accuracy,0.328,1.9779,2.8799,3.0999
+densenet121_long,balanced_accuracy,0.834,1.846,2.55,3.012
+densenet121_ordinal,balanced_accuracy,0.5092,1.6366,2.846,3.338
+densenet121_ordinal_aug,balanced_accuracy,0.5512,1.5093,2.7936,3.4255
+densenet121_weighted,balanced_accuracy,0.592,1.868,2.528,3.232
+effnetb3_weighted,balanced_accuracy,0.5242,1.9493,2.629,3.1332
+resnet50_weighted,balanced_accuracy,0.1298,1.6898,2.7445,3.162
+ensemble_gmean,balanced_accuracy,0.5,1.692,2.638,3.43

@@ -85,9 +85,9 @@
     ]
   ],
   "auc_class_0": 0.9949,
-  "auc_class_1": 0.9247,
-  "auc_class_2": 0.9335,
-  "auc_class_3": 0.9371,
+  "auc_class_1": 0.9248,
+  "auc_class_2": 0.9334,
+  "auc_class_3": 0.9372,
   "auc_class_4": 0.9444,
   "auc_macro": 0.9469,
   "auc_weighted": 0.9639,
@@ -101,5 +101,7 @@
     "hflip",
     "vflip",
     "hvflip"
-  ]
+  ],
+  "head": "classification",
+  "thresholds": null
 }

@@ -1,125 +1,104 @@
 {
-  "summary": {
-    "run_name": "effnetb3_weighted",
-    "experiment": "efficientnet_b3",
-    "backbone": "efficientnet_b3",
-    "image_size": 300,
-    "epochs_run": 8,
-    "epochs_configured": 20,
-    "best_epoch": 3,
-    "best_val_qwk": 0.8938,
-    "imbalance_strategy": "weighted_loss",
-    "class_weights": [
-      0.2159,
-      1.0569,
-      0.3901,
-      2.0198,
-      1.3173
+  "n_samples": 550,
+  "qwk": 0.8938,
+  "accuracy": 0.7982,
+  "balanced_accuracy": 0.6889,
+  "f1_macro": 0.6654,
+  "f1_weighted": 0.8018,
+  "per_class": [
+    {
+      "label": 0,
+      "class_name": "No DR",
+      "precision": 0.9674,
+      "recall": 0.9852,
+      "f1": 0.9762,
+      "support": 271
+    },
+    {
+      "label": 1,
+      "class_name": "Mild",
+      "precision": 0.5714,
+      "recall": 0.6429,
+      "f1": 0.605,
+      "support": 56
+    },
+    {
+      "label": 2,
+      "class_name": "Moderate",
+      "precision": 0.7581,
+      "recall": 0.6267,
+      "f1": 0.6861,
+      "support": 150
+    },
+    {
+      "label": 3,
+      "class_name": "Severe",
+      "precision": 0.3509,
+      "recall": 0.6897,
+      "f1": 0.4651,
+      "support": 29
+    },
+    {
+      "label": 4,
+      "class_name": "Proliferative DR",
+      "precision": 0.7333,
+      "recall": 0.5,
+      "f1": 0.5946,
+      "support": 44
+    }
+  ],
+  "confusion_matrix": [
+    [
+      267,
+      3,
+      1,
+      0,
+      0
     ],
-    "batch_size": 8,
-    "grad_accum_steps": 2,
-    "effective_batch": 16,
-    "lr": 0.0003,
-    "use_amp": true,
-    "split_fingerprint": "415bcc1c575a",
-    "seed": 42,
-    "total_minutes": 6.55,
-    "mean_epoch_seconds": 49.1,
-    "device": "NVIDIA GeForce RTX 3050 6GB Laptop GPU"
-  },
-  "val_metrics": {
-    "n_samples": 550,
-    "qwk": 0.8938,
-    "accuracy": 0.7982,
-    "balanced_accuracy": 0.6889,
-    "f1_macro": 0.6654,
-    "f1_weighted": 0.8018,
-    "per_class": [
-      {
-        "label": 0,
-        "class_name": "No DR",
-        "precision": 0.9674,
-        "recall": 0.9852,
-        "f1": 0.9762,
-        "support": 271
-      },
-      {
-        "label": 1,
-        "class_name": "Mild",
-        "precision": 0.5714,
-        "recall": 0.6429,
-        "f1": 0.605,
-        "support": 56
-      },
-      {
-        "label": 2,
-        "class_name": "Moderate",
-        "precision": 0.7581,
-        "recall": 0.6267,
-        "f1": 0.6861,
-        "support": 150
-      },
-      {
-        "label": 3,
-        "class_name": "Severe",
-        "precision": 0.3509,
-        "recall": 0.6897,
-        "f1": 0.4651,
-        "support": 29
-      },
-      {
-        "label": 4,
-        "class_name": "Proliferative DR",
-        "precision": 0.7333,
-        "recall": 0.5,
-        "f1": 0.5946,
-        "support": 44
-      }
+    [
+      6,
+      36,
+      13,
+      0,
+      1
     ],
-    "confusion_matrix": [
-      [
-        267,
-        3,
-        1,
-        0,
-        0
-      ],
-      [
-        6,
-        36,
-        13,
-        0,
-        1
-      ],
-      [
-        3,
-        21,
-        94,
-        27,
-        5
-      ],
-      [
-        0,
-        2,
-        5,
-        20,
-        2
-      ],
-      [
-        0,
-        1,
-        11,
-        10,
-        22
-      ]
+    [
+      3,
+      21,
+      94,
+      27,
+      5
     ],
-    "auc_class_0": 0.9928,
-    "auc_class_1": 0.9127,
-    "auc_class_2": 0.9331,
-    "auc_class_3": 0.9332,
-    "auc_class_4": 0.938,
-    "auc_macro": 0.942,
-    "auc_weighted": 0.9608,
-    "loss": 0.91129
-  }
+    [
+      0,
+      2,
+      5,
+      20,
+      2
+    ],
+    [
+      0,
+      1,
+      11,
+      10,
+      22
+    ]
+  ],
+  "auc_class_0": 0.9928,
+  "auc_class_1": 0.9126,
+  "auc_class_2": 0.9331,
+  "auc_class_3": 0.9332,
+  "auc_class_4": 0.9381,
+  "auc_macro": 0.942,
+  "auc_weighted": 0.9608,
+  "split": "val",
+  "run_name": "effnetb3_weighted",
+  "backbone": "efficientnet_b3",
+  "checkpoint_epoch": 3,
+  "split_fingerprint": "415bcc1c575a",
+  "tta_views": [
+    "none"
+  ],
+  "head": "classification",
+  "thresholds": null
 }

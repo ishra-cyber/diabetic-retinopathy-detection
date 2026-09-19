@@ -1,0 +1,79 @@
+{
+  "best_model": "densenet121_weighted",
+  "n": 550,
+  "n_correct": 438,
+  "n_wrong": 112,
+  "exact_match_pct": 79.64,
+  "within_one_pct": 96.18,
+  "within_two_pct": 99.09,
+  "mean_abs_error": 0.2509,
+  "error_distance_counts": {
+    "0": 438,
+    "1": 91,
+    "2": 16,
+    "3": 5,
+    "4": 0
+  },
+  "worst_examples": [
+    {
+      "id": "fce93caa4758",
+      "true": 4,
+      "pred": 1,
+      "distance": 3
+    },
+    {
+      "id": "eaa0dfbd5024",
+      "true": 4,
+      "pred": 1,
+      "distance": 3
+    },
+    {
+      "id": "8bed09514c3b",
+      "true": 4,
+      "pred": 1,
+      "distance": 3
+    },
+    {
+      "id": "a8263d248523",
+      "true": 0,
+      "pred": 3,
+      "distance": 3
+    },
+    {
+      "id": "73881f55a3ec",
+      "true": 1,
+      "pred": 4,
+      "distance": 3
+    },
+    {
+      "id": "e3ab63dc9a60",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "e34fa07bd64d",
+      "true": 2,
+      "pred": 4,
+      "distance": 2
+    },
+    {
+      "id": "e150935f66a6",
+      "true": 2,
+      "pred": 0,
+      "distance": 2
+    },
+    {
+      "id": "2d07162a13b1",
+      "true": 0,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "80964d8e0863",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    }
+  ]
+}

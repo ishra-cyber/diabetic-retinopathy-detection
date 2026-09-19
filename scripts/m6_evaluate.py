@@ -144,8 +144,15 @@ def main() -> int:
     if args.n_boot > 0 and len(all_metrics) >= 1:
         LOG.info("-" * 64)
         LOG.info("Bootstrap confidence intervals (%d resamples)...", args.n_boot)
+        # Key by RUN name, not by backbone. Keying by backbone was fine while
+        # there was one run per architecture, but it silently collapses several
+        # runs of the same backbone into whichever one happens to be evaluated
+        # last - so a five-arm DenseNet comparison produced a one-row CI table
+        # and a pairwise table that compared architectures that were never the
+        # question. Falling back to the backbone keeps older single-run configs
+        # working.
         boot_runs = {
-            m.get("backbone", m.get("run_name")): (m["_y_true"], m["_y_pred"])
+            m.get("run_name") or m.get("backbone"): (m["_y_true"], m["_y_pred"])
             for m in all_metrics
         }
         try:
@@ -179,7 +186,12 @@ def main() -> int:
 
     # -- figures ------------------------------------------------------------
     best = max(all_metrics, key=lambda m: m["qwk"])
-    tag = best.get("backbone", "best")
+    # Name per-run artefacts after the RUN, not the backbone. With several arms
+    # of one architecture, a backbone tag silently relabels these files: after a
+    # seven-run evaluation, m6_per_class_densenet121.csv described whichever
+    # DenseNet arm happened to win, which is not necessarily the one being
+    # reported. The run name says exactly which model a table describes.
+    tag = best.get("run_name") or best.get("backbone", "best")
     LOG.info("Best by %s QWK: %s (%.4f)", args.split, tag, best["qwk"])
 
     plot_confusion_matrices(

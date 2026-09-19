@@ -1,26 +1,20 @@
 {
   "best_model": "densenet121",
   "n": 550,
-  "n_correct": 446,
-  "n_wrong": 104,
-  "exact_match_pct": 81.09,
-  "within_one_pct": 97.27,
+  "n_correct": 447,
+  "n_wrong": 103,
+  "exact_match_pct": 81.27,
+  "within_one_pct": 98.0,
   "within_two_pct": 100.0,
-  "mean_abs_error": 0.2164,
+  "mean_abs_error": 0.2073,
   "error_distance_counts": {
-    "0": 446,
-    "1": 89,
-    "2": 15,
+    "0": 447,
+    "1": 92,
+    "2": 11,
     "3": 0,
     "4": 0
   },
   "worst_examples": [
-    {
-      "id": "025a169a0bb0",
-      "true": 2,
-      "pred": 0,
-      "distance": 2
-    },
     {
       "id": "0243404e8a00",
       "true": 4,
@@ -34,25 +28,7 @@
       "distance": 2
     },
     {
-      "id": "c1799a6f5c65",
-      "true": 4,
-      "pred": 2,
-      "distance": 2
-    },
-    {
-      "id": "94ef1d14597f",
-      "true": 4,
-      "pred": 2,
-      "distance": 2
-    },
-    {
-      "id": "2628305cbb29",
-      "true": 4,
-      "pred": 2,
-      "distance": 2
-    },
-    {
-      "id": "887c26fc0e1f",
+      "id": "9859e2a6cc24",
       "true": 4,
       "pred": 2,
       "distance": 2
@@ -64,9 +40,33 @@
       "distance": 2
     },
     {
-      "id": "4b1001050f1d",
-      "true": 2,
-      "pred": 0,
+      "id": "2628305cbb29",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "94ef1d14597f",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "c1799a6f5c65",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "72d98188648f",
+      "true": 4,
+      "pred": 2,
+      "distance": 2
+    },
+    {
+      "id": "3a6e9730b298",
+      "true": 4,
+      "pred": 2,
       "distance": 2
     },
     {

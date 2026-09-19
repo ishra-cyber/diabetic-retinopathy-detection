@@ -85,15 +85,20 @@
     ]
   ],
   "auc_class_0": 0.9905,
-  "auc_class_1": 0.8743,
+  "auc_class_1": 0.8741,
   "auc_class_2": 0.935,
-  "auc_class_3": 0.91,
-  "auc_class_4": 0.8958,
-  "auc_macro": 0.9211,
+  "auc_class_3": 0.9101,
+  "auc_class_4": 0.8955,
+  "auc_macro": 0.921,
   "auc_weighted": 0.9517,
   "split": "test",
   "run_name": "effnetb3_weighted",
   "backbone": "efficientnet_b3",
   "checkpoint_epoch": 3,
-  "split_fingerprint": "415bcc1c575a"
+  "split_fingerprint": "415bcc1c575a",
+  "tta_views": [
+    "none"
+  ],
+  "head": "classification",
+  "thresholds": null
 }

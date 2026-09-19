@@ -1,0 +1,25 @@
+# Streamlit theme.
+#
+# This file, not CSS, is what makes the interface light and warm. Streamlit
+# generates the styling for every widget - inputs, selects, checkboxes, the
+# sidebar, the file uploader - from these six values. Overriding the page
+# background in CSS while leaving the theme dark is what produced the earlier
+# mess: a cream page with black input boxes and white labels on it.
+#
+# app.py adds CSS only for things Streamlit has no concept of (the verdict card,
+# the severity strip). It no longer sets colours the theme already owns.
+
+[theme]
+base = "light"
+primaryColor = "#b4551f"             # warm terracotta: buttons, focus rings, checkbox
+backgroundColor = "#fbf8f4"          # warm paper
+secondaryBackgroundColor = "#f2ece2" # sidebar, input fills, code blocks
+textColor = "#1b1a17"                # 16.4:1 on the background
+font = "sans serif"
+
+[client]
+# Hides the "Deploy" button, which is noise in a viva demo.
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

@@ -1,10 +1,10 @@
 {
   "n_samples": 550,
-  "qwk": 0.891,
+  "qwk": 0.8896,
   "accuracy": 0.7964,
   "balanced_accuracy": 0.637,
-  "f1_macro": 0.6412,
-  "f1_weighted": 0.7987,
+  "f1_macro": 0.6406,
+  "f1_weighted": 0.7983,
   "per_class": [
     {
       "label": 0,
@@ -33,17 +33,17 @@
     {
       "label": 3,
       "class_name": "Severe",
-      "precision": 0.2895,
+      "precision": 0.2973,
       "recall": 0.3793,
-      "f1": 0.3284,
+      "f1": 0.3333,
       "support": 29
     },
     {
       "label": 4,
       "class_name": "Proliferative DR",
-      "precision": 0.7429,
+      "precision": 0.7222,
       "recall": 0.5909,
-      "f1": 0.6582,
+      "f1": 0.65,
       "support": 44
     }
   ],
@@ -66,8 +66,8 @@
       1,
       17,
       109,
-      21,
-      2
+      20,
+      3
     ],
     [
       0,
@@ -85,15 +85,20 @@
     ]
   ],
   "auc_class_0": 0.9945,
-  "auc_class_1": 0.9171,
+  "auc_class_1": 0.917,
   "auc_class_2": 0.9262,
   "auc_class_3": 0.8909,
-  "auc_class_4": 0.927,
+  "auc_class_4": 0.9269,
   "auc_macro": 0.9311,
   "auc_weighted": 0.9571,
   "split": "test",
   "run_name": "densenet121_weighted",
   "backbone": "densenet121",
   "checkpoint_epoch": 8,
-  "split_fingerprint": "415bcc1c575a"
+  "split_fingerprint": "415bcc1c575a",
+  "tta_views": [
+    "none"
+  ],
+  "head": "classification",
+  "thresholds": null
 }

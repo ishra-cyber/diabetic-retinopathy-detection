@@ -1,0 +1,109 @@
+{
+  "n_samples": 550,
+  "qwk": 0.8896,
+  "accuracy": 0.7527,
+  "balanced_accuracy": 0.5716,
+  "f1_macro": 0.5749,
+  "f1_weighted": 0.7568,
+  "per_class": [
+    {
+      "label": 0,
+      "class_name": "No DR",
+      "precision": 0.9738,
+      "recall": 0.9594,
+      "f1": 0.9665,
+      "support": 271
+    },
+    {
+      "label": 1,
+      "class_name": "Mild",
+      "precision": 0.475,
+      "recall": 0.3393,
+      "f1": 0.3958,
+      "support": 56
+    },
+    {
+      "label": 2,
+      "class_name": "Moderate",
+      "precision": 0.6375,
+      "recall": 0.68,
+      "f1": 0.6581,
+      "support": 150
+    },
+    {
+      "label": 3,
+      "class_name": "Severe",
+      "precision": 0.2157,
+      "recall": 0.3793,
+      "f1": 0.275,
+      "support": 29
+    },
+    {
+      "label": 4,
+      "class_name": "Proliferative DR",
+      "precision": 0.6875,
+      "recall": 0.5,
+      "f1": 0.5789,
+      "support": 44
+    }
+  ],
+  "confusion_matrix": [
+    [
+      260,
+      9,
+      2,
+      0,
+      0
+    ],
+    [
+      6,
+      19,
+      31,
+      0,
+      0
+    ],
+    [
+      1,
+      11,
+      102,
+      32,
+      4
+    ],
+    [
+      0,
+      1,
+      11,
+      11,
+      6
+    ],
+    [
+      0,
+      0,
+      14,
+      8,
+      22
+    ]
+  ],
+  "auc_class_0": 0.9943,
+  "auc_class_1": 0.7584,
+  "auc_class_2": 0.8878,
+  "auc_class_3": 0.8602,
+  "auc_class_4": 0.921,
+  "auc_macro": 0.8843,
+  "auc_weighted": 0.9283,
+  "split": "test",
+  "run_name": "densenet121_ordinal",
+  "backbone": "densenet121",
+  "checkpoint_epoch": 24,
+  "split_fingerprint": "415bcc1c575a",
+  "tta_views": [
+    "none"
+  ],
+  "head": "ordinal",
+  "thresholds": [
+    0.5,
+    1.2336,
+    2.578,
+    3.1695
+  ]
+}
