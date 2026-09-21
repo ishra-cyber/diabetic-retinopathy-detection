@@ -1,0 +1,20 @@
+# Normalise line endings.
+#
+# Without this, a file written with LF and later saved by a Windows editor as
+# CRLF shows up as a whole-file rewrite: the README produced a 402-insertion /
+# 402-deletion diff in which not one character had actually changed. That noise
+# makes `git log -p` useless as a project timeline.
+#
+# `text=auto` stores everything as LF in the repository and checks it out with
+# the platform's native endings.
+
+* text=auto
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.tif binary
+*.pt  binary
+*.pth binary
+*.npz binary
+*.sqlite3 binary
