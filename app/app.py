@@ -1,24 +1,55 @@
 """
-Retinal Screening Support — Streamlit dashboard.
+Retinal Screening Support - Streamlit dashboard.
+File location: <project_root>/app/app.py
 
 Run from the project root:
     streamlit run app/app.py
 
-Requires: streamlit>=1.42, plotly>=5.19, pandas, numpy, pillow
-(torch is optional; it is only used to report GPU status.)
+Four pages:
+    New screening     upload a fundus image -> stage, confidence, Grad-CAM -> keep on file
+    Patient timeline  progression summary, severity chart, visit history, PDF report
+    Records           database statistics, stage distribution, activity table, CSV export
+    About             grading scale, the active model's test metrics, every trained run
+
+Inference goes through `preprocess_from_config` and `cam_for_image` - the same
+functions training and evaluation used - so the app predicts exactly what the
+evaluation measured. All storage goes through `src.db.dao`; nothing here writes SQL.
 """
+
 from __future__ import annotations
 
 import hashlib
 import html as htmllib
 import io
-from datetime import date, timedelta
+import json
+import sys
+from datetime import date, datetime
+from pathlib import Path
 
+# --- make `src` importable ---------------------------------------------------
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import cv2
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from PIL import Image
+import torch
+
+from src.analysis.progression import (
+    analyse_progression,
+    progression_summary_text,
+    simulate_visit_history,
+)
+from src.data.preprocess import bgr_to_rgb, preprocess_from_config
+from src.data.transforms import build_transforms
+from src.db import dao
+from src.explain.gradcam import cam_for_image
+from src.models.evaluate import find_runs, load_checkpoint
+from src.models.thresholds import apply_thresholds, scores_to_probabilities
+from src.utils.config import class_names, get_path, load_config
 
 st.set_page_config(
     page_title="Retinal Screening Support",
@@ -27,24 +58,31 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# The model the report presents as final. Selected by default when present.
+REPORTED_RUN = "densenet121_weighted"
+
 # ───────────────────────────────────────────────────────────── constants
 STAGES = {0: "No DR", 1: "Mild", 2: "Moderate", 3: "Severe", 4: "Proliferative DR"}
 STAGE_COLOR = {0: "#10B981", 1: "#3B82F6", 2: "#F59E0B", 3: "#F97316", 4: "#EF4444"}
 STAGE_TINT = {0: "#ECFDF5", 1: "#EFF6FF", 2: "#FFFBEB", 3: "#FFF7ED", 4: "#FEF2F2"}
-MODELS = [
-    "densenet121_weighted",
-    "resnet50_weighted",
-    "effnetb3_weighted",
-    "densenet121_ordinal_aug",
-]
+
+# One plain-English line per stage, shown under the predicted stage.
+STAGE_MEANING = {
+    0: "No signs of diabetic eye disease in this photograph.",
+    1: "A few tiny bulges in the smallest vessels. Usually watched, not treated.",
+    2: "More vessels damaged, some may leak. Usually seen by a specialist within months.",
+    3: "Widespread vessel blockage. Usually warrants a prompt specialist appointment.",
+    4: "Fragile new vessels are growing. Needs urgent specialist assessment.",
+}
+FINDINGS = {
+    0: "No abnormalities.",
+    1: "Microaneurysms only.",
+    2: "More than microaneurysms but less than severe NPDR.",
+    3: "Any of: &gt;20 intraretinal haemorrhages in each of 4 quadrants, venous beading in "
+       "2+ quadrants, or IRMA in 1+ quadrant &mdash; with no signs of proliferation.",
+    4: "Neovascularisation, or vitreous / preretinal haemorrhage.",
+}
 PAGES = ["New screening", "Patient timeline", "Records", "About"]
-WORKSPACES = ["Main clinic", "Outreach camp", "Teaching hospital"]
-SEED = 42
-
-# Shown in the sidebar status box. Change to "Live model" once run_model()
-# and gradcam_for() call your trained checkpoint instead of the mocks below.
-INFERENCE_MODE = "Mock inference"
-
 PLOT_CONFIG = {"displayModeBar": False}
 esc = htmllib.escape
 
@@ -145,16 +183,19 @@ section[data-testid="stSidebar"] [role="radiogroup"] label[data-selected="true"]
 
 /* Result callout */
 .result-row { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
-.callout { flex: 1; min-width: 200px; border-radius: 12px; border: 1px solid var(--rs-border);
+.callout { flex: 2 1 260px; min-width: 0; border-radius: 12px; border: 1px solid var(--rs-border);
   border-left: 4px solid; padding: 12px 16px; }
 .callout-label { font-size: 12px; color: var(--rs-muted); font-weight: 500;
   text-transform: uppercase; letter-spacing: .05em; }
 .callout-value { font-size: 20px; font-weight: 700; margin-top: 4px; letter-spacing: -0.01em; }
-.conf { border: 1px solid var(--rs-border); border-radius: 12px; padding: 12px 16px; min-width: 140px; }
+.conf { flex: 1 1 170px; border: 1px solid var(--rs-border); border-radius: 12px; padding: 12px 16px; min-width: 0; }
 .conf-badge { display: inline-block; margin-top: 6px; background: #EFF6FF; color: #1D4ED8;
   font-weight: 700; font-size: 18px; padding: 2px 10px; border-radius: 8px;
   font-variant-numeric: tabular-nums; }
 
+.callout-text { font-size: 12.5px; color: var(--rs-body); margin-top: 6px; line-height: 1.45; }
+.note.warn { color: #B45309; }
+.stDownloadButton button { border-radius: 10px !important; font-weight: 600 !important; }
 /* Empty state & notes */
 .empty { text-align: center; padding: 72px 24px; color: var(--rs-muted); }
 .empty-icon { width: 52px; height: 52px; border-radius: 14px; background: var(--rs-mint-soft);
@@ -248,6 +289,15 @@ def page_header(title: str, sub: str) -> None:
     md(f'<div class="rs-head"><div class="rs-title">{title}</div><div class="rs-sub">{sub}</div></div>')
 
 
+def card_title(title: str, sub: str = "") -> None:
+    sub_html = f'<div class="card-sub">{sub}</div>' if sub else ""
+    md(f'<div class="card-title">{title}</div>{sub_html}')
+
+
+def spacer(px: int = 16) -> None:
+    md(f'<div style="height:{px}px"></div>')
+
+
 def metric_card(label: str, value: str, sub: str = "", value_color: str | None = None) -> None:
     style = f' style="color:{value_color}"' if value_color else ""
     md(
@@ -258,133 +308,112 @@ def metric_card(label: str, value: str, sub: str = "", value_color: str | None =
 
 
 def stage_badge(stage: int) -> str:
+    stage = int(stage)
     return (
         f'<span class="badge" style="background:{STAGE_TINT[stage]};color:{STAGE_COLOR[stage]}">'
         f'<i style="background:{STAGE_COLOR[stage]}"></i>Stage {stage} · {STAGES[stage]}</span>'
     )
 
 
+def source_pill(is_simulated) -> str:
+    return ('<span class="src src-simulated">Simulated</span>' if bool(is_simulated)
+            else '<span class="src src-real">Real</span>')
+
+
 def stage_phrase(stage: int) -> str:
-    name = STAGES[stage]
+    name = STAGES[int(stage)]
     return name if "DR" in name else name.lower()
 
 
-# ───────────────────────────────────────────────────────────── system status
+def note(text: str, kind: str = "muted") -> None:
+    md(f'<div class="note {kind}">{text}</div>')
+
+
+def confidence_wording(confidence: float) -> str:
+    """Cautious wording: Milestone 6b measured this model as overconfident."""
+    if confidence >= 0.90:
+        return "The model is very sure of this."
+    if confidence >= 0.75:
+        return "The model is fairly sure of this."
+    if confidence >= 0.55:
+        return "The model leans this way, but is not certain."
+    return "The model is genuinely unsure. Treat this as a maybe."
+
+
+# ───────────────────────────────────────────────────────────── cached resources
 @st.cache_resource
-def gpu_status() -> tuple[str, bool]:
-    try:
-        import torch  # noqa: WPS433 (optional dependency)
-    except ImportError:
-        return "PyTorch not installed", False
-    if torch.cuda.is_available():
-        return "CUDA GPU enabled", True
-    return "Running on CPU", False
+def get_config():
+    cfg = load_config()
+    cfg["training"]["num_workers"] = 0     # the app never uses DataLoader workers
+    return cfg
 
 
-# ───────────────────────────────────────────────────────────── inference (MOCK)
-def run_model(image_bytes: bytes, run_name: str) -> np.ndarray:
-    """Return five stage probabilities.
+@st.cache_resource
+def get_connection(db_path: str):
+    conn = dao.connect(db_path)
+    dao.init_db(conn)
+    return conn
 
-    MOCK: deterministic fake probabilities derived from the image hash, so the
-    same photo always gives the same answer. Replace the body with a call to
-    your trained checkpoint (preprocess -> model -> softmax) before a real demo,
-    then set INFERENCE_MODE = "Live model".
+
+@st.cache_resource
+def get_model(run_name: str, _cfg):
+    """Load a checkpoint once per session. `_cfg` is not hashed by Streamlit."""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    run_dir = get_path(_cfg, "experiments_dir") / run_name
+    model, ckpt = load_checkpoint(run_dir / "best.pt", device,
+                                  num_classes=_cfg["dataset"]["num_classes"])
+    return model, ckpt, device
+
+
+def available_runs(cfg) -> list[str]:
+    return [d.name for d in find_runs(get_path(cfg, "experiments_dir"))]
+
+
+def run_metrics(cfg, run_name: str) -> dict | None:
+    path = get_path(cfg, "experiments_dir") / run_name / "metrics_test.json"
+    return json.loads(path.read_text()) if path.is_file() else None
+
+
+# ───────────────────────────────────────────────────────────── inference
+def run_inference(model, ckpt, image_rgb, cfg, device):
+    """One prediction, whichever head the checkpoint was trained with.
+
+    A classification checkpoint emits five logits, so `cam_for_image` is taken at
+    face value. An ordinal checkpoint emits a single severity score: the stage
+    comes from the thresholds stored in the checkpoint (fitted on validation,
+    never refitted here) and the five bars are derived from that score.
     """
-    seed = int(hashlib.sha256(image_bytes + run_name.encode()).hexdigest()[:8], 16)
-    rng = np.random.default_rng(seed)
-    stage = int(rng.choice(5, p=[0.40, 0.15, 0.25, 0.10, 0.10]))
-    alpha = np.full(5, 0.5)
-    alpha[stage] += 8.0
-    for neighbour in (stage - 1, stage + 1):
-        if 0 <= neighbour < 5:
-            alpha[neighbour] += 1.5
-    return rng.dirichlet(alpha)
+    head = str(ckpt.get("head", "classification"))
+    num_classes = int(cfg["dataset"]["num_classes"])
+    result = cam_for_image(model, image_rgb, cfg, device)
 
+    if head != "ordinal":
+        result["head"] = "classification"
+        result["score"] = None
+        return result
 
-@st.cache_data(show_spinner=False)
-def load_image(image_bytes: bytes) -> Image.Image:
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    img.thumbnail((720, 720))
-    return img
+    thresholds = ckpt.get("thresholds")
+    if not thresholds:
+        raise ValueError(
+            f"Run '{ckpt.get('run_name')}' uses the ordinal head but its checkpoint "
+            "carries no thresholds, so a score cannot be turned into a stage."
+        )
 
+    transform = build_transforms(cfg, train=False)
+    with torch.no_grad():
+        tensor = transform(image_rgb).unsqueeze(0).to(device)
+        score = float(model(tensor).float().cpu().numpy().reshape(-1)[0])
 
-@st.cache_data(show_spinner=False)
-def gradcam_for(image_bytes: bytes) -> Image.Image:
-    """MOCK Grad-CAM: a smooth synthetic heatmap blended over the photo.
+    stage = int(apply_thresholds([score], thresholds)[0])
+    probabilities = scores_to_probabilities(
+        [score], num_classes=num_classes,
+        sigma=float(ckpt.get("ordinal_sigma", 0.5)), thresholds=thresholds,
+    )[0]
 
-    Replace with your real Grad-CAM output (e.g. from scripts/m7_gradcam.py).
-    """
-    img = load_image(image_bytes)
-    base = np.asarray(img, dtype=np.float32) / 255.0
-    h, w = base.shape[:2]
-    rng = np.random.default_rng(int(hashlib.sha256(image_bytes).hexdigest()[:8], 16))
-    yy, xx = np.mgrid[0:h, 0:w]
-    heat = np.zeros((h, w), dtype=np.float32)
-    for _ in range(3):
-        cx, cy = rng.uniform(0.3, 0.7) * w, rng.uniform(0.3, 0.7) * h
-        s = rng.uniform(0.07, 0.16) * min(h, w)
-        heat += rng.uniform(0.5, 1.0) * np.exp(-((xx - cx) ** 2 + (yy - cy) ** 2) / (2 * s * s))
-    heat /= heat.max()
-    r = np.clip(1.5 - np.abs(4 * heat - 3), 0, 1)
-    g = np.clip(1.5 - np.abs(4 * heat - 2), 0, 1)
-    b = np.clip(1.5 - np.abs(4 * heat - 1), 0, 1)
-    alpha = (0.55 * heat)[..., None]
-    out = base * (1 - alpha) + np.stack([r, g, b], axis=-1) * alpha
-    return Image.fromarray((out * 255).astype(np.uint8))
-
-
-# ───────────────────────────────────────────────────────────── mock records
-@st.cache_data(show_spinner=False)
-def seed_records() -> list[dict]:
-    """Simulated visit history, marked source='Simulated'. Real screenings are added at runtime."""
-    rng = np.random.default_rng(SEED)
-    today = date.today()
-    rows: list[dict] = []
-    for i in range(14):
-        patient = f"PT-{1001 + i * 7}"
-        visit = today - timedelta(days=int(rng.integers(500, 1100)))
-        stage = int(rng.choice(5, p=[0.35, 0.25, 0.25, 0.10, 0.05]))
-        for v in range(int(rng.integers(2, 7))):
-            if v:
-                visit += timedelta(days=int(rng.integers(90, 220)))
-                stage = int(np.clip(stage + rng.choice([-1, 0, 0, 0, 1, 1]), 0, 4))
-            if visit > today:
-                break
-            rows.append(
-                dict(
-                    patient=patient,
-                    date=visit,
-                    stage=stage,
-                    confidence=float(rng.uniform(0.62, 0.96)),
-                    source="Simulated",
-                    model="densenet121_weighted",
-                )
-            )
-    return rows
-
-
-def records_df() -> pd.DataFrame:
-    df = pd.DataFrame(st.session_state.records)
-    df["date"] = pd.to_datetime(df["date"])
-    return df
-
-
-def records_table(df: pd.DataFrame) -> None:
-    rows = "".join(
-        f"<tr><td class='strong'>{esc(str(r.patient))}</td>"
-        f"<td>{r.date:%d %b %Y}</td>"
-        f"<td>{stage_badge(int(r.stage))}</td>"
-        f"<td class='num'>{r.confidence * 100:.1f}%</td>"
-        f"<td><span class='src src-{r.source.lower()}'>{r.source}</span></td>"
-        f"<td class='muted'>{esc(r.model)}</td></tr>"
-        for r in df.itertuples()
-    )
-    md(
-        '<div class="table-wrap"><table class="rs-table"><thead><tr>'
-        "<th>Patient</th><th>Visit date</th><th>Stage</th>"
-        '<th class="num">Confidence</th><th>Source</th><th>Model</th>'
-        f"</tr></thead><tbody>{rows}</tbody></table></div>"
-    )
+    result.update(head="ordinal", score=score, thresholds=list(thresholds),
+                  predicted=stage, probabilities=probabilities,
+                  confidence=float(probabilities[stage]))
+    return result
 
 
 # ───────────────────────────────────────────────────────────── charts
@@ -403,319 +432,559 @@ def style_fig(fig: go.Figure, height: int) -> go.Figure:
     return fig
 
 
-def probability_chart(probs: list[float], predicted: int) -> go.Figure:
-    labels = [f"Stage {s} · {STAGES[s]}" for s in STAGES]
-    fig = go.Figure(
-        go.Bar(
-            x=[p * 100 for p in probs],
-            y=labels,
-            orientation="h",
-            marker=dict(
-                color=[STAGE_COLOR[s] if s == predicted else "#CBD5E1" for s in STAGES],
-                cornerradius=6,
-            ),
-            text=[f"{p * 100:.1f}%" for p in probs],
-            textposition="outside",
-            textfont=dict(color="#0F172A", size=12),
-            cliponaxis=False,
-            hovertemplate="%{y}: %{x:.1f}%<extra></extra>",
-        )
-    )
+def show_chart(fig: go.Figure, key: str) -> None:
+    st.plotly_chart(fig, config=PLOT_CONFIG, theme=None, key=key)
+
+
+def probability_chart(probs, predicted: int) -> go.Figure:
+    probs = [float(p) for p in probs]
+    fig = go.Figure(go.Bar(
+        x=[p * 100 for p in probs],
+        y=[f"Stage {s} · {STAGES[s]}" for s in STAGES],
+        orientation="h",
+        marker=dict(color=[STAGE_COLOR[s] if s == predicted else "#CBD5E1" for s in STAGES],
+                    cornerradius=6),
+        text=[f"{p * 100:.1f}%" for p in probs],
+        textposition="outside",
+        textfont=dict(color="#0F172A", size=12),
+        cliponaxis=False,
+        hovertemplate="%{y}: %{x:.1f}%<extra></extra>",
+    ))
     fig.update_xaxes(range=[0, 118], visible=False)
     fig.update_yaxes(autorange="reversed", showgrid=False, ticks="")
     fig.update_layout(bargap=0.38)
     return style_fig(fig, 220)
 
 
-def timeline_chart(p: pd.DataFrame) -> go.Figure:
-    fig = go.Figure(
-        go.Scatter(
-            x=p["date"],
-            y=p["stage"],
-            mode="lines+markers",
-            line=dict(color="#10B981", width=2.5, shape="linear"),
-            fill="tozeroy",
-            fillcolor="rgba(16,185,129,0.10)",
-            marker=dict(
-                size=11,
-                color=[STAGE_COLOR[int(s)] for s in p["stage"]],
-                line=dict(color="#FFFFFF", width=2),
-            ),
-            customdata=[STAGES[int(s)] for s in p["stage"]],
-            hovertemplate="%{x|%d %b %Y}<br>Stage %{y} · %{customdata}<extra></extra>",
-        )
-    )
-    fig.update_yaxes(
-        range=[-0.25, 4.45],
-        tickvals=list(STAGES),
-        ticktext=[f"{s} · {n}" for s, n in STAGES.items()],
-        gridcolor="#EEF2F6",
-        zeroline=False,
-    )
+def timeline_chart(visits: pd.DataFrame) -> go.Figure:
+    dates = pd.to_datetime(visits["visit_date"])
+    stages = visits["predicted_stage"].astype(int)
+    sim = visits["is_simulated"].astype(bool)
+    fig = go.Figure(go.Scatter(
+        x=dates, y=stages,
+        mode="lines+markers",
+        line=dict(color="#10B981", width=2.5, shape="linear"),
+        fill="tozeroy",
+        fillcolor="rgba(16,185,129,0.10)",
+        marker=dict(size=11, color=[STAGE_COLOR[s] for s in stages],
+                    line=dict(color="#FFFFFF", width=2)),
+        customdata=[[STAGES[s], "Simulated" if f else "Real"] for s, f in zip(stages, sim)],
+        hovertemplate="%{x|%d %b %Y}<br>Stage %{y} · %{customdata[0]}<br>%{customdata[1]}<extra></extra>",
+    ))
+    fig.update_yaxes(range=[-0.25, 4.45], tickvals=list(STAGES),
+                     ticktext=[f"{s} · {n}" for s, n in STAGES.items()],
+                     gridcolor="#EEF2F6", zeroline=False)
     fig.update_xaxes(showgrid=False, tickformat="%b %Y", linecolor="#E2E8F0")
+    if dates.nunique() == 1:
+        # One visit: give the lone point some room instead of a run of identical ticks.
+        centre = dates.iloc[0]
+        fig.update_xaxes(range=[centre - pd.Timedelta(days=90), centre + pd.Timedelta(days=90)],
+                         dtick="M1", tickformat="%b %Y")
     return style_fig(fig, 320)
 
 
-def distribution_chart(df: pd.DataFrame) -> go.Figure:
-    counts = df["stage"].value_counts().reindex(list(STAGES), fill_value=0)
-    fig = go.Figure(
-        go.Bar(
-            x=counts.values,
-            y=[f"Stage {s} · {STAGES[s]}" for s in STAGES],
-            orientation="h",
-            marker=dict(color=[STAGE_COLOR[s] for s in STAGES], cornerradius=6),
-            text=counts.values,
-            textposition="outside",
-            textfont=dict(color="#0F172A"),
-            cliponaxis=False,
-            hovertemplate="%{y}: %{x} visits<extra></extra>",
-        )
-    )
-    fig.update_xaxes(gridcolor="#EEF2F6", zeroline=False, range=[0, max(int(counts.max()), 1) * 1.15])
+def distribution_chart(by_stage: dict) -> go.Figure:
+    counts = [int(by_stage.get(s, by_stage.get(str(s), 0))) for s in STAGES]
+    fig = go.Figure(go.Bar(
+        x=counts,
+        y=[f"Stage {s} · {STAGES[s]}" for s in STAGES],
+        orientation="h",
+        marker=dict(color=[STAGE_COLOR[s] for s in STAGES], cornerradius=6),
+        text=counts,
+        textposition="outside",
+        textfont=dict(color="#0F172A"),
+        cliponaxis=False,
+        hovertemplate="%{y}: %{x} visits<extra></extra>",
+    ))
+    fig.update_xaxes(gridcolor="#EEF2F6", zeroline=False, range=[0, max(max(counts), 1) * 1.15])
     fig.update_yaxes(autorange="reversed", showgrid=False, ticks="")
     fig.update_layout(bargap=0.35)
     return style_fig(fig, 260)
 
 
-# ───────────────────────────────────────────────────────────── pages
-EMPTY_ICON = (
+def visits_table(df: pd.DataFrame, show_patient: bool = True) -> None:
+    """Borderless HTML table. `df` needs visit_date, predicted_stage, confidence,
+    is_simulated and model_version (plus patient_id when show_patient)."""
+    rows = []
+    for r in df.itertuples():
+        when = pd.to_datetime(r.visit_date)
+        patient = f"<td class='strong'>{esc(str(r.patient_id))}</td>" if show_patient else ""
+        rows.append(
+            f"<tr>{patient}<td>{when:%d %b %Y}</td><td>{stage_badge(r.predicted_stage)}</td>"
+            f"<td class='num'>{float(r.confidence) * 100:.1f}%</td>"
+            f"<td>{source_pill(r.is_simulated)}</td>"
+            f"<td class='muted'>{esc(str(r.model_version or '—'))}</td></tr>"
+        )
+    patient_head = "<th>Patient</th>" if show_patient else ""
+    md(
+        '<div class="table-wrap"><table class="rs-table"><thead><tr>'
+        f"{patient_head}<th>Visit date</th><th>Stage</th>"
+        '<th class="num">Confidence</th><th>Source</th><th>Model</th>'
+        f"</tr></thead><tbody>{''.join(rows)}</tbody></table></div>"
+    )
+
+
+# ───────────────────────────────────────────────────────────── page: new screening
+EYE_ICON = (
     '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#10B981" '
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
     '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>'
 )
 
 
-def page_new_screening() -> None:
+def empty_state(title: str, sub: str) -> None:
+    md(f'<div class="empty"><div class="empty-icon">{EYE_ICON}</div>'
+       f'<div class="empty-title">{title}</div><div class="empty-sub">{sub}</div></div>')
+
+
+def save_visit(cfg, conn, patient_id, visit_date, run_name, processed_rgb, result) -> int:
+    """Write the processed photo and heatmap to disk, then record the visit."""
+    uploads_dir = get_path(cfg, "uploads_dir")
+    gradcam_dir = get_path(cfg, "gradcam_dir")
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    gradcam_dir.mkdir(parents=True, exist_ok=True)
+
+    stem = f"{patient_id}_{datetime.now():%Y%m%d_%H%M%S}"
+    image_path = uploads_dir / f"{stem}.png"
+    cam_path = gradcam_dir / f"{stem}_cam.png"
+    cv2.imwrite(str(image_path), cv2.cvtColor(processed_rgb, cv2.COLOR_RGB2BGR))
+    cv2.imwrite(str(cam_path), cv2.cvtColor(result["overlay"], cv2.COLOR_RGB2BGR))
+
+    return dao.add_visit(
+        conn, patient_id=patient_id, visit_date=visit_date,
+        predicted_stage=int(result["predicted"]), confidence=float(result["confidence"]),
+        probabilities=[float(p) for p in result["probabilities"]],
+        image_path=str(image_path), gradcam_path=str(cam_path),
+        model_version=run_name, is_simulated=False,
+    )
+
+
+def page_screen(cfg, conn, run_name):
     page_header("New screening", "Upload a retinal photograph to grade diabetic retinopathy severity.")
     left, right = st.columns([5, 6], gap="large")
 
     with left:
         with st.container(key="card_input"):
-            md('<div class="card-title">Screening details</div>'
-               '<div class="card-sub">Fundus photograph and visit information</div>')
-            upload = st.file_uploader("Retinal photograph", type=["png", "jpg", "jpeg"])
+            card_title("Screening details", "Fundus photograph and visit information")
+            upload = st.file_uploader("Retinal photograph",
+                                      type=["png", "jpg", "jpeg", "tif", "tiff"])
             c1, c2 = st.columns(2)
-            model = c1.selectbox("Model", MODELS)
-            ref = c2.text_input("Patient reference", placeholder="e.g. PT-1001")
-            c3, c4 = st.columns(2)
-            visit = c3.date_input("Visit date", value=date.today(), max_value=date.today())
-            with c4:
-                md('<div style="height:30px"></div>')
-                keep = st.checkbox("Keep this result on file", value=True)
+            patient_id = c1.text_input("Patient reference", placeholder="e.g. P001").strip()
+            visit_date = c2.date_input("Visit date", value=date.today(), max_value=date.today())
+            keep = st.checkbox("Keep this result on file", value=True)
             run = st.button("Run screening", type="primary", disabled=upload is None)
+            note(f"Model: <b>{esc(run_name)}</b> &middot; change it in the sidebar.")
 
             data = upload.getvalue() if upload is not None else None
-            fid = hashlib.sha256(data).hexdigest()[:16] if data else None
+            key = (hashlib.sha256(data).hexdigest()[:16], run_name) if data else None
+            res = st.session_state.result
 
             if run and data:
-                probs = run_model(data, model)
-                pred = int(np.argmax(probs))
-                saved_to = None
-                if keep and ref.strip():
-                    st.session_state.records.append(
-                        dict(
-                            patient=ref.strip(),
-                            date=visit,
-                            stage=pred,
-                            confidence=float(probs[pred]),
-                            source="Real",
-                            model=model,
-                        )
-                    )
-                    saved_to = ref.strip()
-                st.session_state.result = dict(
-                    fid=fid,
-                    model=model,
-                    probs=probs.tolist(),
-                    pred=pred,
-                    saved_to=saved_to,
-                    missing_ref=keep and not ref.strip(),
-                )
+                image_bgr = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
+                if image_bgr is None:
+                    st.session_state.result = res = {"key": key, "error": "That file could not be read as an image."}
+                else:
+                    try:
+                        with st.spinner("Loading the model and reading the image..."):
+                            model, ckpt, device = get_model(run_name, cfg)
+                            processed = bgr_to_rgb(preprocess_from_config(image_bgr, cfg))
+                            result = run_inference(model, ckpt, processed, cfg, device)
+                        res = {"key": key, "error": None, "original": bgr_to_rgb(image_bgr),
+                               "processed": processed, "result": result,
+                               "epoch": ckpt.get("epoch"), "saved": None}
+                    except Exception as exc:  # noqa: BLE001
+                        res = {"key": key, "error": f"The model could not process that image: {esc(str(exc))}"}
+                    st.session_state.result = res
 
-            res = st.session_state.result
-            if res and res["fid"] == fid and res["missing_ref"]:
-                md('<div class="note muted">Add a patient reference to keep this result on file.</div>')
+                    if res.get("error") is None and keep and patient_id:
+                        # Guard against a double click saving the same visit twice.
+                        save_key = (*key, patient_id, str(visit_date))
+                        if save_key not in st.session_state.saved_keys:
+                            try:
+                                visit_id = save_visit(cfg, conn, patient_id, visit_date,
+                                                      run_name, processed, result)
+                                st.session_state.saved_keys.add(save_key)
+                                res["saved"] = f"Saved as visit #{visit_id} for {esc(patient_id)}."
+                            except ValueError as exc:
+                                res["saved"] = f"Could not save: {esc(str(exc))}"
+                        else:
+                            res["saved"] = f"Already on file for {esc(patient_id)}."
+
+            if res and res.get("key") == key:
+                if res.get("error"):
+                    note(res["error"], "warn")
+                elif res.get("saved"):
+                    note(res["saved"], "ok")
+                elif keep and not patient_id:
+                    note("Add a patient reference to keep this result on file.")
 
     with right:
         res = st.session_state.result
         with st.container(key="card_result"):
-            if not (res and data and res["fid"] == fid):
-                md(
-                    f'<div class="empty"><div class="empty-icon">{EMPTY_ICON}</div>'
-                    '<div class="empty-title">No screening yet</div>'
-                    '<div class="empty-sub">Upload a photograph and run the screening to see the result here.</div></div>'
-                )
+            if not (res and data and res.get("key") == key and not res.get("error")):
+                empty_state("No screening yet",
+                            "Upload a photograph and run the screening to see the result here.")
                 return
 
-            img = load_image(data)
-            tab_fundus, tab_cam = st.tabs(["Fundus image", "Grad-CAM heatmap"])
-            with tab_fundus:
-                st.image(img)
-            with tab_cam:
-                st.image(gradcam_for(data))
+            result = res["result"]
+            stage = int(result["predicted"])
+            conf = float(result["confidence"])
 
-            pred = res["pred"]
-            conf = res["probs"][pred] * 100
+            t1, t2, t3 = st.tabs(["Fundus image", "Grad-CAM heatmap", "Preprocessed"])
+            with t1:
+                st.image(res["original"])
+            with t2:
+                st.image(result["overlay"])
+                note("Warm areas most influenced the answer. It shows attention, not diagnosis.")
+            with t3:
+                st.image(res["processed"])
+                h, w = res["processed"].shape[:2]
+                note(f"Border cropped and resized to {w}&times;{h}, exactly as in training.")
+
             md(
                 '<div class="result-row">'
-                f'<div class="callout" style="border-left-color:{STAGE_COLOR[pred]};background:{STAGE_TINT[pred]}">'
+                f'<div class="callout" style="border-left-color:{STAGE_COLOR[stage]};background:{STAGE_TINT[stage]}">'
                 '<div class="callout-label">Predicted stage</div>'
-                f'<div class="callout-value" style="color:{STAGE_COLOR[pred]}">Stage {pred} — {STAGES[pred]}</div></div>'
+                f'<div class="callout-value" style="color:{STAGE_COLOR[stage]}">Stage {stage} — {STAGES[stage]}</div>'
+                f'<div class="callout-text">{STAGE_MEANING[stage]}</div></div>'
                 '<div class="conf"><div class="callout-label">Confidence</div>'
-                f'<div class="conf-badge">{conf:.1f}%</div></div></div>'
+                f'<div class="conf-badge">{conf * 100:.1f}%</div>'
+                f'<div class="callout-text">{confidence_wording(conf)}</div></div></div>'
             )
+
             md('<div class="section-label">Probability by stage</div>')
-            st.plotly_chart(probability_chart(res["probs"], pred), config=PLOT_CONFIG, theme=None, key="prob_chart")
-            if res["saved_to"]:
-                md(f'<div class="note ok">Saved to {esc(res["saved_to"])}\'s record.</div>')
+            show_chart(probability_chart(result["probabilities"], stage), key="prob_chart")
+            if result.get("head") == "ordinal":
+                note(f"Ordinal model: one severity score of <b>{result['score']:.2f}</b> on the 0–4 "
+                     "scale, cut at the thresholds fixed in training. The bars are spread from that score.")
+
+            stats = result["stats"]
+            border = float(stats["border_fraction"])
+            md('<div class="section-label">Heatmap check</div>')
+            md(
+                f'<div class="kv"><span>Attention on the image edge</span><span>{border:.0%}</span></div>'
+                f'<div class="kv"><span>Area the model focused on</span>'
+                f'<span>{float(stats["hot_area_fraction"]):.0%}</span></div>'
+                f'<div class="kv"><span>Checkpoint</span><span>{esc(run_name)} · epoch {res["epoch"]}</span></div>'
+            )
+            if border > 0.35:
+                note(f"{border:.0%} of the attention sits on the photograph's rim rather than the "
+                     "retina, so this answer deserves extra scepticism.", "warn")
 
 
-def page_patient_timeline() -> None:
+# ───────────────────────────────────────────────────────────── page: patient timeline
+def page_timeline(cfg, conn, names):
     page_header("Patient timeline", "Track how retinopathy severity changes across visits.")
-    df = records_df()
-    patients = sorted(df["patient"].unique())
-    default = int(df["patient"].value_counts().reindex(patients).argmax())
+    patients = dao.list_patients(conn)
+
+    if patients.empty:
+        with st.container(key="card_empty_tl"):
+            empty_state("No one on file yet",
+                        "Screen an image with “Keep this result on file” ticked, or build a demo history below.")
+        spacer()
+        simulation_card(conn)
+        return
+
     pick, _ = st.columns([1, 2])
-    pid = pick.selectbox("Patient", patients, index=default)
+    patient_id = pick.selectbox("Patient", patients["patient_id"].tolist())
+    visits = dao.get_visits(conn, patient_id)
+    if visits.empty:
+        note("This patient has no visits recorded.")
+        simulation_card(conn)
+        return
 
-    p = df[df["patient"] == pid].sort_values("date").reset_index(drop=True)
-    latest, first = int(p["stage"].iloc[-1]), int(p["stage"].iloc[0])
+    a = analyse_progression(visits)
+    latest, trend = int(a["latest_stage"]), a["trend"]
+    n_sim = int(visits["is_simulated"].sum())
 
-    if len(p) >= 2:
-        diff = latest - int(p["stage"].iloc[-2])
-        direction = "worsening" if diff > 0 else "improving" if diff < 0 else "stable"
-        headline = f"Currently stage {latest} — {stage_phrase(latest)}, and {direction}"
+    if a["n_visits"] >= 2:
+        headline = f"Currently stage {latest} — {stage_phrase(latest)}, and {trend}"
     else:
-        direction = "first visit"
-        headline = f"Stage {latest} — {stage_phrase(latest)} at first visit"
-    dir_style = {
-        "worsening": ("Worsening ↑", "#EF4444"),
-        "improving": ("Improving ↓", "#10B981"),
-        "stable": ("Stable →", "#64748B"),
-        "first visit": ("First visit", "#64748B"),
-    }[direction]
-
+        headline = f"Stage {latest} — {stage_phrase(latest)} at the first visit on file"
+    sim_line = (f" · {n_sim} of {len(visits)} visits are simulated" if n_sim else "")
     md(
         f'<div class="banner" style="border-left-color:{STAGE_COLOR[latest]}">'
         f'<div class="banner-title">{headline}</div>'
-        f'<div class="banner-sub">{len(p)} visit{"s" if len(p) != 1 else ""} between '
-        f'{p["date"].iloc[0]:%d %b %Y} and {p["date"].iloc[-1]:%d %b %Y}</div></div>'
+        f'<div class="banner-sub">{esc(progression_summary_text(a, names).replace("NOTE: this history includes SIMULATED visits for demonstration. ", "").strip())}'
+        f'{sim_line}</div></div>'
     )
 
-    change = latest - first
+    direction = {
+        "worsening": ("Worsening ↑", "#EF4444"),
+        "improving": ("Improving ↓", "#10B981"),
+        "stable": ("Stable →", "#64748B"),
+    }.get(trend, ("—", "#64748B"))
+    change = a["stage_change"]
+    slope = a.get("slope_per_year")
+
     cols = st.columns(4)
     with cols[0]:
-        metric_card("Visits", str(len(p)), "on record")
+        metric_card("Visits", str(a["n_visits"]), f"{len(visits) - n_sim} real · {n_sim} simulated")
     with cols[1]:
         metric_card("Latest stage", f"Stage {latest}", STAGES[latest], STAGE_COLOR[latest])
     with cols[2]:
-        metric_card("Direction", dir_style[0], "vs previous visit", dir_style[1])
+        metric_card("Direction", direction[0], "first vs latest visit", direction[1])
     with cols[3]:
-        metric_card("Change since first", f"{change:+d}", f"stages since {p['date'].iloc[0]:%b %Y}")
+        metric_card("Change since first", "—" if change is None else f"{change:+d}",
+                    f"{slope:+.2f} stages / year" if slope is not None else "needs two visits")
 
-    md('<div style="height:16px"></div>')
+    spacer()
     with st.container(key="card_timeline"):
-        md('<div class="card-title">Severity over time</div>'
-           '<div class="card-sub">Predicted stage at each visit</div>')
-        st.plotly_chart(timeline_chart(p), config=PLOT_CONFIG, theme=None, key="timeline_chart")
+        card_title("Severity over time", "Predicted stage at each visit")
+        show_chart(timeline_chart(visits), key="timeline_chart")
 
-    md('<div style="height:16px"></div>')
+    spacer()
     with st.container(key="card_history"):
-        md('<div class="card-title">Visit history</div>')
-        records_table(p.sort_values("date", ascending=False))
+        head, btn = st.columns([3, 1])
+        with head:
+            card_title("Visit history", "Oldest visit last")
+        with btn:
+            pdf = build_pdf_report(cfg, patient_id, visits, a, names)
+            if pdf is not None:
+                st.download_button("Download PDF", data=pdf, file_name=f"DR_report_{patient_id}.pdf",
+                                   mime="application/pdf", width="stretch")
+        visits_table(visits.iloc[::-1], show_patient=False)
+
+    latest_row = visits.iloc[-1]
+    photos = [(latest_row.get("image_path"), "Photograph"), (latest_row.get("gradcam_path"), "Grad-CAM")]
+    photos = [(p, label) for p, label in photos if p and Path(str(p)).is_file()]
+    if photos:
+        spacer()
+        with st.container(key="card_photos"):
+            card_title("Latest visit images", f"{pd.to_datetime(latest_row['visit_date']):%d %b %Y}")
+            for col, (path, label) in zip(st.columns(2), photos):
+                with col:
+                    st.image(str(path))
+                    note(label)
+
+    spacer()
+    simulation_card(conn)
 
 
-def page_records() -> None:
+def simulation_card(conn):
+    with st.container(key="card_sim"):
+        card_title("Build a demo history",
+                   "APTOS photographs each person once, so multi-visit histories are simulated "
+                   "and flagged as such everywhere.")
+        with st.expander("Create simulated visits"):
+            c1, c2, c3, c4 = st.columns(4)
+            sim_id = c1.text_input("Reference", value="SIM001")
+            n_visits = c2.slider("Visits", 2, 8, 5)
+            pattern = c3.selectbox("Pattern", ["worsening", "improving", "stable", "fluctuating"])
+            start_stage = c4.slider("Starting stage", 0, 4, 1)
+            if st.button("Create history"):
+                for record in simulate_visit_history(sim_id, n_visits=n_visits,
+                                                     start_stage=start_stage, pattern=pattern):
+                    dao.add_visit(conn, model_version="SIMULATED", **record)
+                st.rerun()
+
+
+# ───────────────────────────────────────────────────────────── PDF report
+def build_pdf_report(cfg, patient_id, visits, analysis, names):
+    """One-page PDF summary. Returns None if reportlab is not installed."""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import mm
+        from reportlab.pdfgen import canvas as pdf_canvas
+    except ImportError:
+        return None
+
+    buffer = io.BytesIO()
+    pdf = pdf_canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    y = height - 22 * mm
+
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawString(20 * mm, y, "Diabetic Retinopathy Screening Report")
+    y -= 7 * mm
+    pdf.setFillColorRGB(0.75, 0.1, 0.1)
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(20 * mm, y, "ACADEMIC PROTOTYPE - NOT A MEDICAL DEVICE")
+    y -= 5 * mm
+    pdf.setFont("Helvetica", 7.5)
+    for line in _wrap(" ".join(cfg["app"]["disclaimer"].split()), 118):
+        pdf.drawString(20 * mm, y, line)
+        y -= 3.6 * mm
+    pdf.setFillColorRGB(0, 0, 0)
+    y -= 4 * mm
+
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawString(20 * mm, y, f"Patient: {patient_id}")
+    y -= 6 * mm
+    pdf.setFont("Helvetica", 9)
+    for label, value in (
+        ("Report generated", datetime.now().strftime("%Y-%m-%d %H:%M")),
+        ("Visits recorded", str(analysis["n_visits"])),
+        ("Latest stage", f"{analysis['latest_stage']} - {names[analysis['latest_stage']]}"
+         if analysis["latest_stage"] is not None else "-"),
+        ("Trend", analysis["trend"]),
+        ("Observation period", f"{analysis['days_observed']} days" if analysis["days_observed"] else "-"),
+        ("Simulated data included", "YES" if analysis["any_simulated"] else "No"),
+    ):
+        pdf.drawString(20 * mm, y, f"{label}: {value}")
+        y -= 5 * mm
+
+    y -= 3 * mm
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(20 * mm, y, "Summary")
+    y -= 5 * mm
+    pdf.setFont("Helvetica", 8.5)
+    for line in _wrap(progression_summary_text(analysis, names), 105):
+        pdf.drawString(20 * mm, y, line)
+        y -= 4.2 * mm
+
+    y -= 4 * mm
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(20 * mm, y, "Visit history")
+    y -= 6 * mm
+    pdf.setFont("Helvetica-Bold", 8)
+    for x, head in ((20, "Date"), (55, "Stage"), (110, "Confidence"), (145, "Source")):
+        pdf.drawString(x * mm, y, head)
+    y -= 4 * mm
+    pdf.setFont("Helvetica", 8)
+    for _, row in visits.iterrows():
+        if y < 25 * mm:
+            pdf.showPage()
+            y = height - 20 * mm
+            pdf.setFont("Helvetica", 8)
+        pdf.drawString(20 * mm, y, str(row["visit_date"]))
+        pdf.drawString(55 * mm, y, f"{row['predicted_stage']} - {names[int(row['predicted_stage'])]}")
+        pdf.drawString(110 * mm, y, f"{row['confidence']:.1%}")
+        pdf.drawString(145 * mm, y, "SIMULATED" if row["is_simulated"] else "recorded")
+        y -= 4.5 * mm
+
+    pdf.setFont("Helvetica-Oblique", 7)
+    pdf.drawString(20 * mm, 12 * mm, "Generated by an academic screening-support prototype. "
+                                     "Not validated for clinical use. Not a diagnosis.")
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def _wrap(text: str, width: int):
+    words, lines, current = text.split(), [], ""
+    for word in words:
+        if len(current) + len(word) + 1 <= width:
+            current = f"{current} {word}".strip()
+        else:
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines
+
+
+# ───────────────────────────────────────────────────────────── page: records
+def page_records(cfg, conn):
     page_header("Records", "Every screening on file across all patients.")
-    df = records_df()
-    real = int((df["source"] == "Real").sum())
+    stats = dao.database_stats(conn)
 
     cols = st.columns(4)
     with cols[0]:
-        metric_card("People", str(df["patient"].nunique()), "unique patients")
+        metric_card("People", str(stats["n_patients"]), "patients on file")
     with cols[1]:
-        metric_card("Visits", str(len(df)), "screenings on file")
+        metric_card("Visits", str(stats["n_visits"]), "screenings on file")
     with cols[2]:
-        metric_card("Real screenings", str(real), "run in this app")
+        metric_card("Real screenings", str(stats["n_real_visits"]), "run through the model")
     with cols[3]:
-        metric_card("Invented for demo", str(len(df) - real), "simulated history")
+        metric_card("Invented for demo", str(stats["n_simulated_visits"]), "simulated history")
 
-    md('<div style="height:16px"></div>')
+    if not stats["n_visits"]:
+        spacer()
+        with st.container(key="card_empty_rec"):
+            empty_state("Nothing stored yet", "Results you keep on file will appear here.")
+        return
+
+    spacer()
     with st.container(key="card_distribution"):
-        md('<div class="card-title">Stage distribution</div>'
-           '<div class="card-sub">Number of visits at each severity stage</div>')
-        st.plotly_chart(distribution_chart(df), config=PLOT_CONFIG, theme=None, key="distribution_chart")
+        card_title("Stage distribution", "Number of stored visits at each severity stage")
+        show_chart(distribution_chart(stats["visits_by_stage"]), key="distribution_chart")
 
-    md('<div style="height:16px"></div>')
+    spacer()
     with st.container(key="card_activity"):
         head, filt = st.columns([3, 2])
         with head:
-            md('<div class="card-title">Activity</div>'
-               '<div class="card-sub">Most recent screenings first</div>')
+            card_title("Activity", "Most recent screenings first")
         with filt:
-            show = st.radio("Show", ["All", "Real", "Simulated"], horizontal=True, label_visibility="collapsed")
-        view = df if show == "All" else df[df["source"] == show]
-        if view.empty:
-            md('<div class="note muted">No records match this filter yet.</div>')
+            show = st.radio("Show", ["All", "Real", "Simulated"], horizontal=True,
+                            label_visibility="collapsed")
+        df = dao.export_all(conn).sort_values(["visit_date", "visit_id"], ascending=False)
+        if show != "All":
+            df = df[df["is_simulated"].astype(bool) == (show == "Simulated")]
+        if df.empty:
+            note("No records match this filter yet.")
         else:
-            records_table(view.sort_values("date", ascending=False))
+            visits_table(df)
+        export = dao.export_all(conn)
+        st.download_button("Export all records (CSV)",
+                           data=export.to_csv(index=False).encode("utf-8"),
+                           file_name="dr_visits_export.csv", mime="text/csv")
 
 
-def page_about() -> None:
-    page_header("About", "Grading scale and the model behind each screening.")
+# ───────────────────────────────────────────────────────────── page: about
+def page_about(cfg, run_name):
+    page_header("About", "Grading scale, the active model, and every model trained for this project.")
     left, right = st.columns([3, 2], gap="large")
 
-    findings = {
-        0: "No abnormalities.",
-        1: "Microaneurysms only.",
-        2: "More than microaneurysms but less than severe NPDR.",
-        3: "Any of: &gt;20 intraretinal haemorrhages in each of 4 quadrants, venous beading in "
-           "2+ quadrants, or IRMA in 1+ quadrant — with no signs of proliferation.",
-        4: "Neovascularisation, or vitreous / preretinal haemorrhage.",
-    }
     with left:
         with st.container(key="card_scale"):
-            md('<div class="card-title">Severity scale</div>'
-               '<div class="card-sub">International Clinical Diabetic Retinopathy scale</div>')
-            rows = "".join(
-                f"<tr><td>{stage_badge(s)}</td><td>{findings[s]}</td></tr>" for s in STAGES
-            )
-            md(
-                '<table class="rs-table"><thead><tr><th>Stage</th><th>Typical findings</th></tr></thead>'
-                f"<tbody>{rows}</tbody></table>"
-            )
+            card_title("Severity scale", "International Clinical Diabetic Retinopathy scale")
+            rows = "".join(f"<tr><td>{stage_badge(s)}</td><td>{FINDINGS[s]}</td></tr>" for s in STAGES)
+            md('<table class="rs-table"><thead><tr><th>Stage</th><th>Typical findings</th></tr></thead>'
+               f"<tbody>{rows}</tbody></table>")
 
+        spacer()
+        with st.container(key="card_runs"):
+            card_title("All trained models", "Held-out test split, 550 images")
+            rows = []
+            for name in available_runs(cfg):
+                m = run_metrics(cfg, name) or {}
+                fmt = lambda v: f"{v:.4f}" if isinstance(v, (int, float)) else "—"  # noqa: E731
+                active = " class='strong'" if name == run_name else ""
+                rows.append(f"<tr><td{active}>{esc(name)}</td><td class='muted'>{esc(str(m.get('head', '—')))}</td>"
+                            f"<td class='num'>{fmt(m.get('qwk'))}</td><td class='num'>{fmt(m.get('accuracy'))}</td>"
+                            f"<td class='num'>{fmt(m.get('balanced_accuracy'))}</td></tr>")
+            md('<table class="rs-table"><thead><tr><th>Run</th><th>Head</th><th class="num">QWK</th>'
+               '<th class="num">Accuracy</th><th class="num">Bal. acc.</th></tr></thead>'
+               f"<tbody>{''.join(rows)}</tbody></table>")
+
+    m = run_metrics(cfg, run_name) or {}
     with right:
         with st.container(key="card_model"):
-            md('<div class="card-title">Model</div>'
-               '<div class="card-sub">densenet121_weighted · held-out test split</div>')
+            card_title("Active model", f"{esc(run_name)} · held-out test split")
+            pct = lambda v: f"{v * 100:.1f}%" if isinstance(v, (int, float)) else "—"  # noqa: E731
+            num = lambda v, d=4: f"{v:.{d}f}" if isinstance(v, (int, float)) else "—"  # noqa: E731
+            size = cfg["preprocessing"]["image_size"]
             spec = [
-                ("Backbone", "DenseNet121"),
-                ("Preprocessing", "Ben Graham"),
-                ("Loss", "Class-weighted cross-entropy"),
-                ("Test images", "550"),
-                ("Quadratic weighted kappa", "0.8896"),
-                ("QWK 95% CI", "0.862 – 0.915"),
-                ("Accuracy", "79.6%"),
-                ("Balanced accuracy", "63.7%"),
-                ("Macro F1", "0.641"),
-                ("Macro ROC-AUC", "0.931"),
-                ("Random seed", str(SEED)),
+                ("Backbone", m.get("backbone", "—")),
+                ("Head", m.get("head", "—")),
+                ("Dataset", "APTOS 2019 (3,662 images)"),
+                ("Input", f"{size}×{size} RGB, border-cropped"),
+                ("Test images", str(m.get("n_samples", "—"))),
+                ("Quadratic weighted kappa", num(m.get("qwk"))),
+                ("Accuracy", pct(m.get("accuracy"))),
+                ("Balanced accuracy", pct(m.get("balanced_accuracy"))),
+                ("Macro F1", num(m.get("f1_macro"), 3)),
+                ("Macro ROC-AUC", num(m.get("auc_macro"), 3)),
+                ("Checkpoint epoch", str(m.get("checkpoint_epoch", "—"))),
+                ("Random seed", str(cfg["project"]["seed"])),
             ]
-            md("".join(f'<div class="kv"><span>{k}</span><span>{v}</span></div>' for k, v in spec))
+            md("".join(f'<div class="kv"><span>{k}</span><span>{esc(str(v))}</span></div>' for k, v in spec))
 
-        md('<div style="height:16px"></div>')
-        with st.container(key="card_recall"):
-            md('<div class="card-title">Recall by stage</div>')
-            recall = {0: 0.971, 1: 0.518, 2: 0.727, 3: 0.379, 4: 0.591}
-            md("".join(
-                f'<div class="kv"><span>{stage_badge(s)}</span><span>{r * 100:.1f}%</span></div>'
-                for s, r in recall.items()
-            ))
+        per_class = m.get("per_class") or []
+        if per_class:
+            spacer()
+            with st.container(key="card_recall"):
+                card_title("Recall by stage")
+                md("".join(
+                    f'<div class="kv"><span>{stage_badge(int(c["label"]))}</span>'
+                    f'<span>{float(c["recall"]) * 100:.1f}%</span></div>' for c in per_class
+                ))
 
 
 # ───────────────────────────────────────────────────────────── app shell
-def sidebar() -> str:
+def sidebar(cfg) -> tuple[str, str | None]:
     with st.sidebar:
         md(
             '<div class="brand"><div class="brand-mark">'
@@ -725,35 +994,54 @@ def sidebar() -> str:
             '</div><div><div class="brand-name">Retinal Screening</div>'
             '<div class="brand-sub">Support</div></div></div>'
         )
-        st.selectbox("Workspace", WORKSPACES, label_visibility="collapsed")
+        runs = available_runs(cfg)
+        run_name = None
+        if runs:
+            default = runs.index(REPORTED_RUN) if REPORTED_RUN in runs else 0
+            run_name = st.selectbox("Model", runs, index=default, label_visibility="collapsed")
+
         md('<div class="nav-label">Menu</div>')
         page = st.radio("Navigation", PAGES, label_visibility="collapsed")
 
-        gpu_label, gpu_on = gpu_status()
-        mode_dot = "warn" if INFERENCE_MODE.lower().startswith("mock") else "on"
+        gpu = torch.cuda.is_available()
         md(
             '<div class="status"><div class="status-title">System</div>'
-            f'<div class="status-row"><span class="dot {"on" if gpu_on else ""}"></span>{gpu_label}</div>'
-            f'<div class="status-row"><span class="dot on"></span>Random seed {SEED}</div>'
-            f'<div class="status-row"><span class="dot {mode_dot}"></span>{INFERENCE_MODE}</div>'
-            "</div>"
+            f'<div class="status-row"><span class="dot {"on" if gpu else ""}"></span>'
+            f'{"CUDA GPU enabled" if gpu else "Running on CPU"}</div>'
+            f'<div class="status-row"><span class="dot on"></span>Random seed {cfg["project"]["seed"]}</div>'
+            f'<div class="status-row"><span class="dot {"on" if run_name else "warn"}"></span>'
+            f'{"Model ready" if run_name else "No trained model found"}</div></div>'
         )
-    return page
+    return page, run_name
 
 
 def main() -> None:
     md(CSS)
-    if "records" not in st.session_state:
-        st.session_state.records = [dict(r) for r in seed_records()]
     st.session_state.setdefault("result", None)
+    st.session_state.setdefault("saved_keys", set())
 
-    page = sidebar()
-    {
-        "New screening": page_new_screening,
-        "Patient timeline": page_patient_timeline,
-        "Records": page_records,
-        "About": page_about,
-    }[page]()
+    cfg = get_config()
+    names = class_names(cfg)
+    conn = get_connection(str(get_path(cfg, "db_path")))
+    page, run_name = sidebar(cfg)
+
+    if page == "New screening":
+        if run_name is None:
+            page_header("New screening", "Upload a retinal photograph to grade diabetic retinopathy severity.")
+            with st.container(key="card_nomodel"):
+                empty_state("No trained model found", "Train a model first so experiments/ has a best.pt.")
+        else:
+            page_screen(cfg, conn, run_name)
+    elif page == "Patient timeline":
+        page_timeline(cfg, conn, names)
+    elif page == "Records":
+        page_records(cfg, conn)
+    else:
+        if run_name is None:
+            page_header("About", "No trained model found.")
+        else:
+            page_about(cfg, run_name)
 
 
-main()
+if __name__ == "__main__":
+    main()
