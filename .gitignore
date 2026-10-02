@@ -28,3 +28,7 @@ __pycache__/
 venv/
 .pytest_cache/
 .ipynb_checkpoints/
+*.pt
+*.pth
+*.ckpt
+reports_backup/

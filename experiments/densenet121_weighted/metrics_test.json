@@ -86,7 +86,7 @@
   ],
   "auc_class_0": 0.9945,
   "auc_class_1": 0.917,
-  "auc_class_2": 0.9262,
+  "auc_class_2": 0.9261,
   "auc_class_3": 0.8909,
   "auc_class_4": 0.9269,
   "auc_macro": 0.9311,
